@@ -1,0 +1,106 @@
+import { useState } from 'react';
+import { Header } from './components/layout/Header';
+import { CalendarView } from './components/calendar/CalendarView';
+import { EventList } from './components/events/EventList';
+import { EventModal } from './components/forms/EventModal';
+import { ImportModal } from './components/forms/ImportModal';
+import { QuickAdd } from './components/ui/QuickAdd';
+import { useEvents } from './hooks/useEvents';
+import { useDateRange } from './hooks/useDateRange';
+import { isFirebaseConfigured } from './services/firebase';
+
+function App() {
+  const { events, addEvent, updateEvent, deleteEvent, isLive } = useEvents();
+  const { start, end, activePreset, setPreset, setCustomRange } = useDateRange(90);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [editEvent, setEditEvent] = useState(null);
+  const [activeView, setActiveView] = useState('calendar');
+
+  function handleAddEvent() {
+    setEditEvent(null);
+    setModalOpen(true);
+  }
+
+  function handleEditEvent(event) {
+    setEditEvent(event);
+    setModalOpen(true);
+  }
+
+  function handleSave(data) {
+    if (data.id) {
+      updateEvent(data.id, data);
+    } else {
+      addEvent(data);
+    }
+  }
+
+  function handleImportEvents(newEvents) {
+    newEvents.forEach(e => addEvent(e));
+  }
+
+  // openModal=true when parsed event needs user review before saving
+  function handleQuickAdd(event, openModal = false) {
+    if (openModal) {
+      setEditEvent({ ...event, id: null });
+      setModalOpen(true);
+    } else {
+      addEvent(event);
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header
+        start={start}
+        end={end}
+        activePreset={activePreset}
+        onPreset={setPreset}
+        onCustomRange={setCustomRange}
+        onAddEvent={handleAddEvent}
+        onImport={() => setImportOpen(true)}
+        activeView={activeView}
+        onViewChange={setActiveView}
+        isLive={isLive}
+      />
+
+      <QuickAdd onAdd={handleQuickAdd} />
+
+      {isLive && (
+        <div className="max-w-6xl mx-auto px-4">
+          <p className="flex items-center gap-1.5 text-xs text-emerald-600 pb-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+            Live — changes sync instantly for both of you
+          </p>
+        </div>
+      )}
+
+      <main className="pb-12">
+        {activeView === 'calendar' ? (
+          <CalendarView start={start} end={end} events={events} />
+        ) : (
+          <EventList
+            events={events}
+            onEdit={handleEditEvent}
+            onDelete={deleteEvent}
+          />
+        )}
+      </main>
+
+      <EventModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSave={handleSave}
+        editEvent={editEvent}
+      />
+
+      <ImportModal
+        isOpen={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImport={handleImportEvents}
+      />
+    </div>
+  );
+}
+
+export default App;
