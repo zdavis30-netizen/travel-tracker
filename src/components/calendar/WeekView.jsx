@@ -16,12 +16,12 @@ import { getEventsForPersonOnDate, getTogetherOnDate } from '../../utils/eventUt
 function LocationChip({ event }) {
   return (
     <div className="flex items-center gap-1 flex-wrap">
-      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-800 border border-blue-200 leading-tight">
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 leading-tight">
         <span>📍</span>
         <span>{event.city}</span>
       </span>
       {event.hasKids && (
-        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-800 border border-yellow-200 leading-tight">
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 leading-tight">
           <span>👧</span>
           <span>Kids</span>
         </span>
@@ -32,13 +32,11 @@ function LocationChip({ event }) {
 
 function FlightChip({ event }) {
   return (
-    <span
-      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs border leading-tight ${
-        event.needsBooking
-          ? 'bg-amber-100 text-amber-800 border-amber-200 font-bold'
-          : 'bg-amber-100 text-amber-800 border-amber-200'
-      }`}
-    >
+    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs border leading-tight ${
+      event.needsBooking
+        ? 'bg-sky-50 text-sky-700 border-sky-200 font-bold'
+        : 'bg-sky-50 text-sky-700 border-sky-200 font-medium'
+    }`}>
       {event.needsBooking && (
         <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
       )}
@@ -51,13 +49,11 @@ function FlightChip({ event }) {
 function HotelChip({ event }) {
   const label = event.hotelName || event.city;
   return (
-    <span
-      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs border leading-tight ${
-        event.needsBooking
-          ? 'bg-emerald-100 text-emerald-800 border-emerald-200 font-bold'
-          : 'bg-emerald-100 text-emerald-800 border-emerald-200'
-      }`}
-    >
+    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs border leading-tight ${
+      event.needsBooking
+        ? 'bg-teal-50 text-teal-700 border-teal-200 font-bold'
+        : 'bg-teal-50 text-teal-700 border-teal-200 font-medium'
+    }`}>
       {event.needsBooking && (
         <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
       )}
@@ -95,11 +91,11 @@ export function WeekView({ events, onAddEntry, isReadOnly, onDayClick }) {
   return (
     <div className="max-w-full px-4 py-4">
       {/* Week navigation */}
-      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+      <div className="bg-white rounded-2xl shadow-sm px-4 py-3 flex items-center justify-between mb-4 gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <button
             onClick={handlePrev}
-            className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-gray-600 cursor-pointer text-sm"
+            className="p-1.5 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors text-gray-500 cursor-pointer text-sm"
             aria-label="Previous week"
           >
             ← Prev
@@ -109,7 +105,7 @@ export function WeekView({ events, onAddEntry, isReadOnly, onDayClick }) {
           </span>
           <button
             onClick={handleNext}
-            className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-gray-600 cursor-pointer text-sm"
+            className="p-1.5 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors text-gray-500 cursor-pointer text-sm"
             aria-label="Next week"
           >
             Next →
@@ -117,17 +113,17 @@ export function WeekView({ events, onAddEntry, isReadOnly, onDayClick }) {
         </div>
         <button
           onClick={() => setWeekStart(getCurrentWeekStart())}
-          className="text-xs text-indigo-600 hover:underline cursor-pointer"
+          className="text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer transition-colors"
         >
           Today
         </button>
       </div>
 
       {/* Scrollable grid */}
-      <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+      <div className="overflow-x-auto bg-white rounded-2xl shadow-sm overflow-hidden">
         <table className="w-full border-collapse" style={{ minWidth: '700px' }}>
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
+            <tr className="bg-slate-50 border-b border-gray-200">
               {/* Row label column */}
               <th className="w-20 px-3 py-2 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide border-r border-gray-200" />
               {days.map(dateStr => {
@@ -162,7 +158,7 @@ export function WeekView({ events, onAddEntry, isReadOnly, onDayClick }) {
             {/* Zach row */}
             <tr className="border-b border-gray-100">
               <td className="px-3 py-2 border-r border-gray-200 bg-indigo-50">
-                <span className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">Zach</span>
+                <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">Zach</span>
               </td>
               {days.map(dateStr => {
                 const dayEvents = getEventsForPersonOnDate(events, 'zach', dateStr);
@@ -193,7 +189,7 @@ export function WeekView({ events, onAddEntry, isReadOnly, onDayClick }) {
             {/* Arianne row */}
             <tr className="border-b border-gray-100">
               <td className="px-3 py-2 border-r border-gray-200 bg-rose-50">
-                <span className="text-xs font-semibold text-rose-700 uppercase tracking-wide">Arianne</span>
+                <span className="text-xs font-semibold text-rose-600 uppercase tracking-wide">Arianne</span>
               </td>
               {days.map(dateStr => {
                 const dayEvents = getEventsForPersonOnDate(events, 'arianne', dateStr);
@@ -223,7 +219,7 @@ export function WeekView({ events, onAddEntry, isReadOnly, onDayClick }) {
 
             {/* Together row */}
             <tr>
-              <td className="px-3 py-2 border-r border-gray-200 bg-green-50 text-center">
+              <td className="px-3 py-2 border-r border-gray-200 bg-emerald-50 text-center">
                 <span className="text-base">💚</span>
               </td>
               {days.map(dateStr => {
@@ -235,7 +231,7 @@ export function WeekView({ events, onAddEntry, isReadOnly, onDayClick }) {
                     style={{ minWidth: '120px' }}
                   >
                     {isTogether && (
-                      <div className="flex items-center justify-center px-2 py-1 rounded bg-green-100 border border-green-200">
+                      <div className="flex items-center justify-center px-2 py-1 rounded-full bg-emerald-50 border border-emerald-200">
                         <span className="text-base">💚</span>
                       </div>
                     )}

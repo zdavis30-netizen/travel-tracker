@@ -41,7 +41,7 @@ export function CalendarView({ events, onAddEvent, onEditEvent, onDeleteEvent, i
     <div>
       {/* View mode toggle */}
       <div className="max-w-5xl mx-auto px-4 pt-4 flex justify-end">
-        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
+        <div className="bg-gray-100 rounded-full p-1 flex gap-0.5">
           {[
             { key: VIEW_MODES.WEEK, label: 'Week' },
             { key: VIEW_MODES.MONTH, label: 'Month' },
@@ -50,10 +50,10 @@ export function CalendarView({ events, onAddEvent, onEditEvent, onDeleteEvent, i
             <button
               key={key}
               onClick={() => setViewMode(key)}
-              className={`px-3 py-1.5 font-medium transition-colors cursor-pointer ${
+              className={`px-4 py-1 text-sm font-medium rounded-full transition-all cursor-pointer ${
                 viewMode === key
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                  ? 'bg-white shadow-sm text-gray-900'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               {label}
