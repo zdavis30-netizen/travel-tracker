@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { format, parseISO, addDays } from 'date-fns';
-import { getEventsForPersonOnDate, getTogetherOnDate } from '../../utils/eventUtils';
+import { getEventsForPersonOnDate, getTogetherOnDate, getNotesForDate } from '../../utils/eventUtils';
 import { isDateToday } from '../../utils/dateUtils';
 
 // ── Chips ─────────────────────────────────────────────────────────────────────
@@ -74,6 +74,7 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, isReadOnly }) {
   const together = getTogetherOnDate(events, dateStr);
   const zachEvents = getEventsForPersonOnDate(events, 'zach', dateStr);
   const arianneEvents = getEventsForPersonOnDate(events, 'arianne', dateStr);
+  const notes = getNotesForDate(events, dateStr);
 
   const date = parseISO(dateStr);
   const dayName = format(date, 'EEE');
@@ -97,6 +98,7 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, isReadOnly }) {
           {dayNum}
         </span>
         {together && <span className="text-base mt-1">💚</span>}
+        {notes.length > 0 && <span className="text-sm mt-0.5" title={notes[0].text}>📝</span>}
       </div>
 
       {/* Zach */}

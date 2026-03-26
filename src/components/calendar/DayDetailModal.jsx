@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { getEventsForPersonOnDate, getTogetherOnDate } from '../../utils/eventUtils';
+import { getEventsForPersonOnDate, getTogetherOnDate, getNotesForDate } from '../../utils/eventUtils';
 
 function formatFullDate(dateStr) {
   return format(parseISO(dateStr), 'EEEE, MMMM d');
@@ -138,12 +139,106 @@ function PersonSection({ label, colorClass, events, onEdit, onDelete, isReadOnly
   );
 }
 
-export function DayDetailModal({ isOpen, onClose, dateStr, events, onEdit, onDelete, onAdd, isReadOnly }) {
+function NotesSection({ notes, dateStr, onEdit, onDelete, onAddNote, isReadOnly }) {
+  const [isAdding, setIsAdding] = useState(false);
+  const [newText, setNewText] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState('');
+
+  function handleAdd() {
+    if (!newText.trim()) return;
+    onAddNote({ type: 'note', date: dateStr, text: newText.trim() });
+    setNewText('');
+    setIsAdding(false);
+  }
+
+  function handleEditSave(note) {
+    if (!editText.trim()) return;
+    onEdit({ ...note, text: editText.trim() });
+    setEditingId(null);
+  }
+
+  return (
+    <div className="border-t border-gray-100 pt-4">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-semibold text-gray-600 flex items-center gap-1.5">
+          <span>📝</span> Notes
+        </h3>
+        {!isReadOnly && !isAdding && (
+          <button
+            onClick={() => { setIsAdding(true); setNewText(''); }}
+            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer"
+          >
+            + Add note
+          </button>
+        )}
+      </div>
+
+      {/* Existing notes */}
+      <div className="space-y-2">
+        {notes.map(note => (
+          <div key={note.id} className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+            {editingId === note.id ? (
+              <div className="space-y-2">
+                <textarea
+                  value={editText}
+                  onChange={e => setEditText(e.target.value)}
+                  rows={3}
+                  autoFocus
+                  className="w-full text-sm border border-amber-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none bg-white"
+                />
+                <div className="flex gap-2">
+                  <button onClick={() => handleEditSave(note)} className="text-xs font-medium text-indigo-600 hover:text-indigo-800 cursor-pointer">Save</button>
+                  <button onClick={() => setEditingId(null)} className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm text-gray-700 leading-snug flex-1">{note.text}</p>
+                {!isReadOnly && (
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button onClick={() => { setEditingId(note.id); setEditText(note.text); }} className="text-xs text-gray-400 hover:text-indigo-600 cursor-pointer">Edit</button>
+                    <button onClick={() => onDelete(note.id)} className="text-xs text-gray-400 hover:text-red-500 cursor-pointer">Delete</button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+
+        {notes.length === 0 && !isAdding && (
+          <p className="text-xs text-gray-400 italic">No notes for this day</p>
+        )}
+      </div>
+
+      {/* Add new note inline */}
+      {isAdding && (
+        <div className="mt-2 space-y-2">
+          <textarea
+            value={newText}
+            onChange={e => setNewText(e.target.value)}
+            placeholder="Type a note for this day…"
+            rows={3}
+            autoFocus
+            className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+          />
+          <div className="flex gap-2">
+            <button onClick={handleAdd} className="text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-full cursor-pointer transition-colors">Save</button>
+            <button onClick={() => { setIsAdding(false); setNewText(''); }} className="text-xs text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-full border border-gray-200 cursor-pointer">Cancel</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function DayDetailModal({ isOpen, onClose, dateStr, events, onEdit, onDelete, onAdd, onSave, isReadOnly }) {
   if (!dateStr) return null;
 
   const zachEvents = getEventsForPersonOnDate(events, 'zach', dateStr);
   const arianneEvents = getEventsForPersonOnDate(events, 'arianne', dateStr);
   const isTogether = getTogetherOnDate(events, dateStr);
+  const notes = getNotesForDate(events, dateStr);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={formatFullDate(dateStr)}>
@@ -185,6 +280,16 @@ export function DayDetailModal({ isOpen, onClose, dateStr, events, onEdit, onDel
             isReadOnly={isReadOnly}
           />
         </div>
+
+        {/* Notes section */}
+        <NotesSection
+          notes={notes}
+          dateStr={dateStr}
+          onEdit={ev => onEdit?.(ev)}
+          onDelete={id => onDelete?.(id)}
+          onAddNote={note => onSave?.(note)}
+          isReadOnly={isReadOnly}
+        />
       </div>
     </Modal>
   );

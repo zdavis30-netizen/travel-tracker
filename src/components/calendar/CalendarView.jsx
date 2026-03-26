@@ -5,7 +5,7 @@ import { ListView } from './ListView';
 import { DayDetailModal } from './DayDetailModal';
 import { VIEW_MODES } from '../../constants';
 
-export function CalendarView({ events, onAddEvent, onEditEvent, onDeleteEvent, isReadOnly }) {
+export function CalendarView({ events, onAddEvent, onEditEvent, onDeleteEvent, onSaveEvent, isReadOnly }) {
   const [viewMode, setViewMode] = useState(VIEW_MODES.WEEK);
   const [dayDetailDate, setDayDetailDate] = useState(null);
   const [dayDetailOpen, setDayDetailOpen] = useState(false);
@@ -95,6 +95,7 @@ export function CalendarView({ events, onAddEvent, onEditEvent, onDeleteEvent, i
         onEdit={handleEditFromDetail}
         onDelete={handleDeleteFromDetail}
         onAdd={handleAddEntry}
+        onSave={onSaveEvent}
         isReadOnly={isReadOnly}
       />
     </div>

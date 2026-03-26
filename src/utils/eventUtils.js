@@ -8,10 +8,15 @@ export function coversDate(event, dateStr) {
     const end = parseISO(event.dateTo);
     return isWithinInterval(date, { start, end });
   }
-  if (event.type === 'flight') {
+  if (event.type === 'flight' || event.type === 'note') {
     return event.date === dateStr;
   }
   return false;
+}
+
+// Returns all notes for a specific date
+export function getNotesForDate(events, dateStr) {
+  return events.filter(e => e.type === 'note' && e.date === dateStr);
 }
 
 // Returns all events for a specific person on a specific date

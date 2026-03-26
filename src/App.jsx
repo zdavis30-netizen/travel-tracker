@@ -105,6 +105,7 @@ function App() {
             onAddEvent={handleAddEvent}
             onEditEvent={handleEditEvent}
             onDeleteEvent={deleteEvent}
+            onSaveEvent={handleSave}
             isReadOnly={isReadOnly}
           />
         ) : (

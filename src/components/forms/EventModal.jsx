@@ -4,12 +4,14 @@ import { LocationForm } from './LocationForm';
 import { FlightForm } from './FlightForm';
 import { HotelForm } from './HotelForm';
 import { TogetherForm } from './TogetherForm';
+import { NoteForm } from './NoteForm';
 
 const TABS = [
   { key: 'location', label: '📍 Location' },
   { key: 'flight', label: '✈ Flight' },
   { key: 'hotel', label: '🏨 Hotel' },
   { key: 'together', label: '💚 Together' },
+  { key: 'note', label: '📝 Note' },
 ];
 
 export function EventModal({ isOpen, onClose, onSave, editEvent }) {
@@ -57,6 +59,7 @@ export function EventModal({ isOpen, onClose, onSave, editEvent }) {
       {activeTab === 'flight' && <FlightForm {...formProps} />}
       {activeTab === 'hotel' && <HotelForm {...formProps} />}
       {activeTab === 'together' && <TogetherForm {...formProps} />}
+      {activeTab === 'note' && <NoteForm {...formProps} />}
     </Modal>
   );
 }
