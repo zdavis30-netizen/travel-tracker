@@ -9,6 +9,7 @@ function today() {
 
 export function HotelForm({ initial, onSave, onCancel }) {
   const [person, setPerson] = useState(initial?.person || 'zach');
+  const [needsBooking, setNeedsBooking] = useState(initial?.needsBooking ?? false);
   const [hotelName, setHotelName] = useState(initial?.hotelName || '');
   const [city, setCity] = useState(initial?.city || '');
   const [dateFrom, setDateFrom] = useState(initial?.dateFrom || today());
@@ -17,8 +18,15 @@ export function HotelForm({ initial, onSave, onCancel }) {
   function handleSubmit(e) {
     e.preventDefault();
     if (!city.trim()) return;
-    onSave({ type: 'hotel', person, hotelName: hotelName.trim(), city: city.trim(), dateFrom, dateTo });
+    onSave({ type: 'hotel', person, needsBooking, hotelName: hotelName.trim(), city: city.trim(), dateFrom, dateTo });
   }
+
+  const toggleClass = (active) =>
+    `flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors cursor-pointer ${
+      active
+        ? 'bg-indigo-600 text-white border-indigo-600'
+        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+    }`;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -30,11 +38,31 @@ export function HotelForm({ initial, onSave, onCancel }) {
               key={p}
               type="button"
               onClick={() => setPerson(p)}
-              className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors cursor-pointer ${person === p ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+              className={toggleClass(person === p)}
             >
               {PERSON_LABELS[p]}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Booking Status</label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setNeedsBooking(false)}
+            className={toggleClass(!needsBooking)}
+          >
+            ✅ Booked
+          </button>
+          <button
+            type="button"
+            onClick={() => setNeedsBooking(true)}
+            className={toggleClass(needsBooking)}
+          >
+            🔴 Needs Booking
+          </button>
         </div>
       </div>
 

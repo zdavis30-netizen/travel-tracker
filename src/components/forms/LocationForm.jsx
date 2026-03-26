@@ -7,34 +7,50 @@ function today() {
   return format(new Date(), 'yyyy-MM-dd');
 }
 
+function ToggleButtons({ value, onChange, options }) {
+  return (
+    <div className="flex gap-2">
+      {options.map(opt => (
+        <button
+          key={String(opt.value)}
+          type="button"
+          onClick={() => onChange(opt.value)}
+          className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors cursor-pointer ${
+            value === opt.value
+              ? 'bg-indigo-600 text-white border-indigo-600'
+              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function LocationForm({ initial, onSave, onCancel }) {
   const [person, setPerson] = useState(initial?.person || 'zach');
   const [city, setCity] = useState(initial?.city || '');
   const [dateFrom, setDateFrom] = useState(initial?.dateFrom || today());
   const [dateTo, setDateTo] = useState(initial?.dateTo || today());
+  const [hasKids, setHasKids] = useState(initial?.hasKids ?? false);
+  const [together, setTogether] = useState(initial?.together ?? false);
 
   function handleSubmit(e) {
     e.preventDefault();
     if (!city.trim()) return;
-    onSave({ type: 'location', person, city: city.trim(), dateFrom, dateTo });
+    onSave({ type: 'location', person, city: city.trim(), dateFrom, dateTo, hasKids, together });
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Person</label>
-        <div className="flex gap-2">
-          {PEOPLE.map(p => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setPerson(p)}
-              className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors cursor-pointer ${person === p ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
-            >
-              {PERSON_LABELS[p]}
-            </button>
-          ))}
-        </div>
+        <ToggleButtons
+          value={person}
+          onChange={setPerson}
+          options={PEOPLE.map(p => ({ value: p, label: PERSON_LABELS[p] }))}
+        />
       </div>
 
       <div>
@@ -73,11 +89,39 @@ export function LocationForm({ initial, onSave, onCancel }) {
         </div>
       </div>
 
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Kids with you?</label>
+        <ToggleButtons
+          value={hasKids}
+          onChange={setHasKids}
+          options={[
+            { value: true, label: 'Yes' },
+            { value: false, label: 'No' },
+          ]}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Together with {person === 'zach' ? 'Arianne' : 'Zach'}?
+        </label>
+        <ToggleButtons
+          value={together}
+          onChange={setTogether}
+          options={[
+            { value: true, label: 'Yes' },
+            { value: false, label: 'No' },
+          ]}
+        />
+      </div>
+
       <div className="flex gap-2 pt-2">
         <Button type="submit" className="flex-1">
           {initial ? 'Update Location' : 'Add Location'}
         </Button>
-        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+        <Button type="button" variant="secondary" onClick={onCancel}>
+          Cancel
+        </Button>
       </div>
     </form>
   );

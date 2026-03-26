@@ -9,6 +9,7 @@ export const EVENT_TYPES = {
   LOCATION: 'location',
   FLIGHT: 'flight',
   HOTEL: 'hotel',
+  TOGETHER: 'together',
 };
 
 export const COLOR_MAP = {
@@ -33,6 +34,12 @@ export const COLOR_MAP = {
     dot: 'bg-emerald-500',
     darkBg: 'bg-emerald-500',
   },
+  together: {
+    bg: 'bg-green-100',
+    text: 'text-green-800',
+    border: 'border-green-200',
+    dot: 'bg-green-500',
+  },
 };
 
 export const PERSON_COLORS = {
@@ -53,3 +60,8 @@ export const DATE_PRESETS = [
   { label: '60 days', days: 60 },
   { label: '90 days', days: 90 },
 ];
+
+export const VIEW_MODES = {
+  WEEK: 'week',
+  MONTH: 'month',
+};

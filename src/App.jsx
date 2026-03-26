@@ -7,7 +7,8 @@ import { ImportModal } from './components/forms/ImportModal';
 import { QuickAdd } from './components/ui/QuickAdd';
 import { useEvents } from './hooks/useEvents';
 import { useDateRange } from './hooks/useDateRange';
-import { isFirebaseConfigured } from './services/firebase';
+
+const isReadOnly = new URLSearchParams(window.location.search).get('mode') === 'view';
 
 function App() {
   const { events, addEvent, updateEvent, deleteEvent, isLive } = useEvents();
@@ -17,8 +18,14 @@ function App() {
   const [editEvent, setEditEvent] = useState(null);
   const [activeView, setActiveView] = useState('calendar');
 
-  function handleAddEvent() {
-    setEditEvent(null);
+  // dateStr is optional — when provided it pre-fills the date on the form (future enhancement)
+  // editEventOverride is used when opening edit from DayDetailModal
+  function handleAddEvent(dateStr, editEventOverride) {
+    if (editEventOverride) {
+      setEditEvent(editEventOverride);
+    } else {
+      setEditEvent(null);
+    }
     setModalOpen(true);
   }
 
@@ -57,14 +64,15 @@ function App() {
         activePreset={activePreset}
         onPreset={setPreset}
         onCustomRange={setCustomRange}
-        onAddEvent={handleAddEvent}
-        onImport={() => setImportOpen(true)}
+        onAddEvent={isReadOnly ? undefined : handleAddEvent}
+        onImport={isReadOnly ? undefined : () => setImportOpen(true)}
         activeView={activeView}
         onViewChange={setActiveView}
         isLive={isLive}
+        isReadOnly={isReadOnly}
       />
 
-      <QuickAdd onAdd={handleQuickAdd} />
+      {!isReadOnly && <QuickAdd onAdd={handleQuickAdd} />}
 
       {isLive && (
         <div className="max-w-6xl mx-auto px-4">
@@ -77,7 +85,13 @@ function App() {
 
       <main className="pb-12">
         {activeView === 'calendar' ? (
-          <CalendarView start={start} end={end} events={events} />
+          <CalendarView
+            events={events}
+            onAddEvent={handleAddEvent}
+            onEditEvent={handleEditEvent}
+            onDeleteEvent={deleteEvent}
+            isReadOnly={isReadOnly}
+          />
         ) : (
           <EventList
             events={events}
@@ -87,18 +101,22 @@ function App() {
         )}
       </main>
 
-      <EventModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSave={handleSave}
-        editEvent={editEvent}
-      />
+      {!isReadOnly && (
+        <>
+          <EventModal
+            isOpen={modalOpen}
+            onClose={() => setModalOpen(false)}
+            onSave={handleSave}
+            editEvent={editEvent}
+          />
 
-      <ImportModal
-        isOpen={importOpen}
-        onClose={() => setImportOpen(false)}
-        onImport={handleImportEvents}
-      />
+          <ImportModal
+            isOpen={importOpen}
+            onClose={() => setImportOpen(false)}
+            onImport={handleImportEvents}
+          />
+        </>
+      )}
     </div>
   );
 }

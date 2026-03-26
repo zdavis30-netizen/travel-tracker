@@ -1,59 +1,95 @@
-import { useMemo } from 'react';
-import { DayRow } from './DayRow';
-import { buildDayList, formatMonthLabel, isSameMonthAs } from '../../utils/dateUtils';
-import { getEventsForPersonOnDate } from '../../utils/eventUtils';
-import { PERSON_COLORS } from '../../constants';
+import { useState } from 'react';
+import { WeekView } from './WeekView';
+import { MonthView } from './MonthView';
+import { DayDetailModal } from './DayDetailModal';
+import { VIEW_MODES } from '../../constants';
 
-export function CalendarView({ start, end, events }) {
-  const days = useMemo(() => buildDayList(start, end), [start, end]);
+export function CalendarView({ events, onAddEvent, onEditEvent, onDeleteEvent, isReadOnly }) {
+  const [viewMode, setViewMode] = useState(VIEW_MODES.WEEK);
+  const [dayDetailDate, setDayDetailDate] = useState(null);
+  const [dayDetailOpen, setDayDetailOpen] = useState(false);
 
-  if (days.length === 0) {
+  function handleDayClick(dateStr) {
+    setDayDetailDate(dateStr);
+    setDayDetailOpen(true);
+  }
+
+  function handleAddEntry(dateStr) {
+    onAddEvent?.(dateStr);
+  }
+
+  function handleEditFromDetail(event) {
+    setDayDetailOpen(false);
+    onEditEvent?.(event);
+  }
+
+  function handleDeleteFromDetail(id) {
+    onDeleteEvent?.(id);
+    // Keep modal open so user can see remaining events
+  }
+
+  if (!events) {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-400 py-24">
-        <p>No date range selected.</p>
+        <p>Loading events...</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-4">
-      <div className="rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-        {/* Column headers */}
-        <div className="flex border-b-2 border-gray-200 bg-gray-50">
-          <div className="w-28 flex-shrink-0 px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-            Date
-          </div>
-          <div className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wide border-l ${PERSON_COLORS.zach.border} ${PERSON_COLORS.zach.header} ${PERSON_COLORS.zach.headerText}`}>
-            Zach
-          </div>
-          <div className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wide border-l ${PERSON_COLORS.arianne.border} ${PERSON_COLORS.arianne.header} ${PERSON_COLORS.arianne.headerText}`}>
-            Arianne
-          </div>
+    <div>
+      {/* View mode toggle */}
+      <div className="max-w-5xl mx-auto px-4 pt-4 flex justify-end">
+        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
+          <button
+            onClick={() => setViewMode(VIEW_MODES.WEEK)}
+            className={`px-3 py-1.5 font-medium transition-colors cursor-pointer ${
+              viewMode === VIEW_MODES.WEEK
+                ? 'bg-indigo-600 text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            Week
+          </button>
+          <button
+            onClick={() => setViewMode(VIEW_MODES.MONTH)}
+            className={`px-3 py-1.5 font-medium transition-colors cursor-pointer ${
+              viewMode === VIEW_MODES.MONTH
+                ? 'bg-indigo-600 text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            Month
+          </button>
         </div>
-
-        {/* Day rows with month separators */}
-        {days.map((date, i) => {
-          const prev = days[i - 1] || null;
-          const showMonth = !isSameMonthAs(date, prev);
-
-          return (
-            <div key={date}>
-              {showMonth && (
-                <div className="px-3 py-1.5 bg-gray-100 border-b border-gray-200">
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                    {formatMonthLabel(date)}
-                  </span>
-                </div>
-              )}
-              <DayRow
-                date={date}
-                zachEvents={getEventsForPersonOnDate(events, 'zach', date)}
-                arianneEvents={getEventsForPersonOnDate(events, 'arianne', date)}
-              />
-            </div>
-          );
-        })}
       </div>
+
+      {viewMode === VIEW_MODES.WEEK ? (
+        <WeekView
+          events={events}
+          onAddEntry={handleAddEntry}
+          isReadOnly={isReadOnly}
+          onDayClick={handleDayClick}
+        />
+      ) : (
+        <MonthView
+          events={events}
+          onAddEntry={handleAddEntry}
+          isReadOnly={isReadOnly}
+          onDayClick={handleDayClick}
+        />
+      )}
+
+      <DayDetailModal
+        isOpen={dayDetailOpen}
+        onClose={() => setDayDetailOpen(false)}
+        dateStr={dayDetailDate}
+        events={events}
+        onEdit={handleEditFromDetail}
+        onDelete={handleDeleteFromDetail}
+        onAdd={handleAddEntry}
+        isReadOnly={isReadOnly}
+      />
     </div>
   );
 }

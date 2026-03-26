@@ -1,9 +1,9 @@
 import { parseISO, isWithinInterval } from 'date-fns';
 
-// Returns true if a multi-day event (location/hotel) covers the given date
+// Returns true if a multi-day event covers the given date
 export function coversDate(event, dateStr) {
   const date = parseISO(dateStr);
-  if (event.type === 'location' || event.type === 'hotel') {
+  if (event.type === 'location' || event.type === 'hotel' || event.type === 'together') {
     const start = parseISO(event.dateFrom);
     const end = parseISO(event.dateTo);
     return isWithinInterval(date, { start, end });
@@ -16,9 +16,12 @@ export function coversDate(event, dateStr) {
 
 // Returns all events for a specific person on a specific date
 export function getEventsForPersonOnDate(events, person, dateStr) {
-  return events.filter(
-    e => e.person === person && coversDate(e, dateStr)
-  );
+  return events.filter(e => e.person === person && coversDate(e, dateStr));
+}
+
+// Returns true if any "together" event covers the given date
+export function getTogetherOnDate(events, dateStr) {
+  return events.some(e => e.type === 'together' && coversDate(e, dateStr));
 }
 
 // Resolves a display city for a person on a given date, preferring flight destination
