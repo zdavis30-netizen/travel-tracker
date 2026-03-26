@@ -223,8 +223,8 @@ export function WeekView({ events, onAddEntry, isReadOnly, onDayClick }) {
 
             {/* Together row */}
             <tr>
-              <td className="px-3 py-2 border-r border-gray-200 bg-green-50">
-                <span className="text-xs font-semibold text-green-700 uppercase tracking-wide">Together</span>
+              <td className="px-3 py-2 border-r border-gray-200 bg-green-50 text-center">
+                <span className="text-base">💚</span>
               </td>
               {days.map(dateStr => {
                 const isTogether = getTogetherOnDate(events, dateStr);
@@ -235,9 +235,8 @@ export function WeekView({ events, onAddEntry, isReadOnly, onDayClick }) {
                     style={{ minWidth: '120px' }}
                   >
                     {isTogether && (
-                      <div className="flex items-center justify-center gap-1 px-2 py-1 rounded bg-green-100 border border-green-200 text-xs text-green-800 font-medium">
-                        <span>💚</span>
-                        <span>Together</span>
+                      <div className="flex items-center justify-center px-2 py-1 rounded bg-green-100 border border-green-200">
+                        <span className="text-base">💚</span>
                       </div>
                     )}
                   </td>

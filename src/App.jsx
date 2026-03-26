@@ -42,8 +42,23 @@ function App() {
     }
   }
 
+  function isDuplicate(a, b) {
+    if (a.type !== b.type) return false;
+    if (a.type === 'location' || a.type === 'hotel') {
+      return a.person === b.person && a.city === b.city && a.dateFrom === b.dateFrom && a.dateTo === b.dateTo;
+    }
+    if (a.type === 'flight') {
+      return a.person === b.person && a.flightNumber === b.flightNumber && a.date === b.date;
+    }
+    if (a.type === 'together') {
+      return a.dateFrom === b.dateFrom && a.dateTo === b.dateTo;
+    }
+    return false;
+  }
+
   function handleImportEvents(newEvents) {
-    newEvents.forEach(e => addEvent(e));
+    const deduped = newEvents.filter(newEv => !events.some(existing => isDuplicate(existing, newEv)));
+    deduped.forEach(e => addEvent(e));
   }
 
   // openModal=true when parsed event needs user review before saving
