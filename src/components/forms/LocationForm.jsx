@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '../ui/Button';
-import { PEOPLE, PERSON_LABELS } from '../../constants';
+import { PEOPLE, PERSON_LABELS, COMMON_LOCATIONS } from '../../constants';
 import { format } from 'date-fns';
 
 function today() {
@@ -30,11 +30,19 @@ function ToggleButtons({ value, onChange, options }) {
 
 export function LocationForm({ initial, onSave, onCancel }) {
   const [person, setPerson] = useState(initial?.person || 'zach');
-  const [city, setCity] = useState(initial?.city || '');
+  const initialIsCommon = COMMON_LOCATIONS.includes(initial?.city);
+  const [selectedLocation, setSelectedLocation] = useState(
+    initialIsCommon ? initial.city : (initial?.city ? 'other' : '')
+  );
+  const [customCity, setCustomCity] = useState(
+    initialIsCommon ? '' : (initial?.city || '')
+  );
   const [dateFrom, setDateFrom] = useState(initial?.dateFrom || today());
   const [dateTo, setDateTo] = useState(initial?.dateTo || today());
   const [hasKids, setHasKids] = useState(initial?.hasKids ?? false);
   const [together, setTogether] = useState(initial?.together ?? false);
+
+  const city = selectedLocation === 'other' ? customCity : selectedLocation;
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -54,15 +62,45 @@ export function LocationForm({ initial, onSave, onCancel }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">City / Location</label>
-        <input
-          type="text"
-          value={city}
-          onChange={e => setCity(e.target.value)}
-          placeholder="e.g. Naperville, Golden, Milwaukee"
-          required
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
+        <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {COMMON_LOCATIONS.map(loc => (
+            <button
+              key={loc}
+              type="button"
+              onClick={() => setSelectedLocation(loc)}
+              className={`px-3 py-1.5 rounded-full border text-sm font-medium transition-colors cursor-pointer ${
+                selectedLocation === loc
+                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              {loc}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setSelectedLocation('other')}
+            className={`px-3 py-1.5 rounded-full border text-sm font-medium transition-colors cursor-pointer ${
+              selectedLocation === 'other'
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Other…
+          </button>
+        </div>
+        {selectedLocation === 'other' && (
+          <input
+            type="text"
+            value={customCity}
+            onChange={e => setCustomCity(e.target.value)}
+            placeholder="Type a city or location"
+            autoFocus
+            required
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">

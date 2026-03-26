@@ -65,3 +65,10 @@ export const VIEW_MODES = {
   WEEK: 'week',
   MONTH: 'month',
 };
+
+export const COMMON_LOCATIONS = [
+  'Naperville',
+  'Golden',
+  'Milwaukee',
+  'NYC',
+];
