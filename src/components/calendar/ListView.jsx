@@ -80,47 +80,63 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, isReadOnly }) {
   const dayName = format(date, 'EEE');
   const dayNum = format(date, 'MMM d');
 
+  const hasContent = zachEvents.length > 0 || arianneEvents.length > 0 || notes.length > 0 || together;
+
   return (
     <div
-      className={`flex border-b border-gray-100 transition-colors cursor-pointer hover:bg-gray-50/60
+      className={`flex flex-col border-b border-gray-100 transition-colors cursor-pointer hover:bg-gray-50/60
         ${today ? 'border-l-4 border-l-indigo-500 bg-indigo-50/20' : 'bg-white'}`}
       onClick={() => onDayClick?.(dateStr)}
     >
-      {/* Date label */}
-      <div className={`w-24 flex-shrink-0 px-3 py-3 flex flex-col justify-start
-        ${today ? 'bg-indigo-50/40' : ''}`}>
-        <span className={`text-[10px] font-semibold uppercase tracking-widest
-          ${today ? 'text-indigo-500' : 'text-gray-400'}`}>
-          {today ? 'Today' : dayName}
-        </span>
-        <span className={`text-sm font-bold leading-tight mt-0.5
-          ${today ? 'text-indigo-700' : 'text-gray-700'}`}>
-          {dayNum}
-        </span>
-        {together && <span className="text-base mt-1">💚</span>}
-        {notes.length > 0 && <span className="text-sm mt-0.5" title={notes[0].text}>📝</span>}
+      {/* Main row: date + person columns */}
+      <div className="flex">
+        {/* Date label */}
+        <div className={`w-24 flex-shrink-0 px-3 py-3 flex flex-col justify-start
+          ${today ? 'bg-indigo-50/40' : ''}`}>
+          <span className={`text-[10px] font-semibold uppercase tracking-widest
+            ${today ? 'text-indigo-500' : 'text-gray-400'}`}>
+            {today ? 'Today' : dayName}
+          </span>
+          <span className={`text-sm font-bold leading-tight mt-0.5
+            ${today ? 'text-indigo-700' : 'text-gray-700'}`}>
+            {dayNum}
+          </span>
+          {together && <span className="text-base mt-1">💚</span>}
+        </div>
+
+        {/* Zach */}
+        <div className={`flex-1 px-3 py-3 border-l border-cyan-100 bg-cyan-50/10 ${hasContent ? 'min-h-[52px]' : 'min-h-[40px]'}`}>
+          <PersonEvents events={zachEvents} />
+        </div>
+
+        {/* Arianne */}
+        <div className={`flex-1 px-3 py-3 border-l border-purple-100 bg-purple-50/10 ${hasContent ? 'min-h-[52px]' : 'min-h-[40px]'}`}>
+          <PersonEvents events={arianneEvents} />
+        </div>
+
+        {/* Add button */}
+        {!isReadOnly && (
+          <div className="w-8 flex-shrink-0 flex items-center justify-center border-l border-gray-100">
+            <button
+              onClick={e => { e.stopPropagation(); onAddEntry?.(dateStr); }}
+              className="text-gray-300 hover:text-indigo-400 text-lg leading-none cursor-pointer transition-colors"
+              title="Add event"
+            >
+              +
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Zach */}
-      <div className="flex-1 px-3 py-3 border-l border-cyan-100 bg-cyan-50/10 min-h-[52px]">
-        <PersonEvents events={zachEvents} />
-      </div>
-
-      {/* Arianne */}
-      <div className="flex-1 px-3 py-3 border-l border-purple-100 bg-purple-50/10 min-h-[52px]">
-        <PersonEvents events={arianneEvents} />
-      </div>
-
-      {/* Add button */}
-      {!isReadOnly && (
-        <div className="w-8 flex-shrink-0 flex items-center justify-center border-l border-gray-100">
-          <button
-            onClick={e => { e.stopPropagation(); onAddEntry?.(dateStr); }}
-            className="text-gray-300 hover:text-indigo-400 text-lg leading-none cursor-pointer transition-colors"
-            title="Add event"
-          >
-            +
-          </button>
+      {/* Notes strip — full width, shown when notes exist */}
+      {notes.length > 0 && (
+        <div className="mx-0 border-t border-amber-100 bg-amber-50/60 px-4 py-2 flex flex-col gap-1">
+          {notes.map((note, i) => (
+            <div key={note.id || i} className="flex items-start gap-1.5">
+              <span className="text-amber-500 text-xs mt-0.5 flex-shrink-0">📝</span>
+              <p className="text-xs text-gray-700 leading-snug">{note.text}</p>
+            </div>
+          ))}
         </div>
       )}
     </div>
