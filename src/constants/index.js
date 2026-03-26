@@ -44,14 +44,14 @@ export const COLOR_MAP = {
 
 export const PERSON_COLORS = {
   zach: {
-    header: 'bg-indigo-50',
-    headerText: 'text-indigo-700',
-    border: 'border-indigo-200',
+    header: 'bg-cyan-50',
+    headerText: 'text-cyan-700',
+    border: 'border-cyan-200',
   },
   arianne: {
-    header: 'bg-rose-50',
-    headerText: 'text-rose-700',
-    border: 'border-rose-200',
+    header: 'bg-purple-50',
+    headerText: 'text-purple-700',
+    border: 'border-purple-200',
   },
 };
 

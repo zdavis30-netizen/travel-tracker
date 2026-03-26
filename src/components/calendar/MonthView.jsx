@@ -77,7 +77,7 @@ function DayCell({ dateStr, events, month, isReadOnly, onDayClick, onAddEntry })
           <MiniChip color="bg-blue-100 text-blue-700" label={zachLabel} />
         )}
         {arianneLabel && (
-          <MiniChip color="bg-rose-100 text-rose-700" label={arianneLabel} />
+          <MiniChip color="bg-purple-100 text-purple-700" label={arianneLabel} />
         )}
         <div className="flex items-center gap-1 flex-wrap mt-0.5">
           {flightCount > 0 && (
@@ -164,7 +164,7 @@ export function MonthView({ events, onAddEntry, isReadOnly, onDayClick }) {
           <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" /> Zach location
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-rose-400 inline-block" /> Arianne location
+          <span className="w-2 h-2 rounded-full bg-purple-400 inline-block" /> Arianne location
         </span>
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> Flight

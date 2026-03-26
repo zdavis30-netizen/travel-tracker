@@ -264,7 +264,7 @@ export function DayDetailModal({ isOpen, onClose, dateStr, events, onEdit, onDel
         <div className="flex flex-col sm:flex-row gap-4">
           <PersonSection
             label="Zach"
-            colorClass="text-indigo-700"
+            colorClass="text-cyan-700"
             events={zachEvents}
             onEdit={ev => { onEdit?.(ev); onClose(); }}
             onDelete={id => { onDelete?.(id); }}
@@ -273,7 +273,7 @@ export function DayDetailModal({ isOpen, onClose, dateStr, events, onEdit, onDel
           <div className="hidden sm:block w-px bg-gray-200 self-stretch" />
           <PersonSection
             label="Arianne"
-            colorClass="text-rose-700"
+            colorClass="text-purple-700"
             events={arianneEvents}
             onEdit={ev => { onEdit?.(ev); onClose(); }}
             onDelete={id => { onDelete?.(id); }}

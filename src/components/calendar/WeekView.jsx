@@ -157,15 +157,15 @@ export function WeekView({ events, onAddEntry, isReadOnly, onDayClick }) {
           <tbody>
             {/* Zach row */}
             <tr className="border-b border-gray-100">
-              <td className="px-3 py-2 border-r border-gray-200 bg-indigo-50">
-                <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">Zach</span>
+              <td className="px-3 py-2 border-r border-gray-200 bg-cyan-50">
+                <span className="text-xs font-semibold text-cyan-600 uppercase tracking-wide">Zach</span>
               </td>
               {days.map(dateStr => {
                 const dayEvents = getEventsForPersonOnDate(events, 'zach', dateStr);
                 return (
                   <td
                     key={dateStr}
-                    className="px-2 py-2 align-top bg-indigo-50/30 border-r border-gray-100 last:border-r-0 cursor-pointer hover:bg-indigo-50/60 transition-colors"
+                    className="px-2 py-2 align-top bg-cyan-50/30 border-r border-gray-100 last:border-r-0 cursor-pointer hover:bg-cyan-50/60 transition-colors"
                     style={{ minWidth: '120px' }}
                     onClick={() => onDayClick?.(dateStr)}
                   >
@@ -188,15 +188,15 @@ export function WeekView({ events, onAddEntry, isReadOnly, onDayClick }) {
 
             {/* Arianne row */}
             <tr className="border-b border-gray-100">
-              <td className="px-3 py-2 border-r border-gray-200 bg-rose-50">
-                <span className="text-xs font-semibold text-rose-600 uppercase tracking-wide">Arianne</span>
+              <td className="px-3 py-2 border-r border-gray-200 bg-purple-50">
+                <span className="text-xs font-semibold text-purple-600 uppercase tracking-wide">Arianne</span>
               </td>
               {days.map(dateStr => {
                 const dayEvents = getEventsForPersonOnDate(events, 'arianne', dateStr);
                 return (
                   <td
                     key={dateStr}
-                    className="px-2 py-2 align-top bg-rose-50/30 border-r border-gray-100 last:border-r-0 cursor-pointer hover:bg-rose-50/60 transition-colors"
+                    className="px-2 py-2 align-top bg-purple-50/30 border-r border-gray-100 last:border-r-0 cursor-pointer hover:bg-purple-50/60 transition-colors"
                     style={{ minWidth: '120px' }}
                     onClick={() => onDayClick?.(dateStr)}
                   >

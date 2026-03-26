@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { format, parseISO, addDays } from 'date-fns';
+import { useMemo, useState } from 'react';
+import { format, parseISO, addDays, subDays } from 'date-fns';
 import { getEventsForPersonOnDate, getTogetherOnDate, getNotesForDate } from '../../utils/eventUtils';
 import { isDateToday } from '../../utils/dateUtils';
 
@@ -102,14 +102,12 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, isReadOnly }) {
       </div>
 
       {/* Zach */}
-      <div className="flex-1 px-3 py-3 border-l border-indigo-100 bg-indigo-50/10 min-h-[52px]">
-        <div className="text-[10px] font-semibold text-indigo-400 uppercase tracking-widest mb-1">Zach</div>
+      <div className="flex-1 px-3 py-3 border-l border-cyan-100 bg-cyan-50/10 min-h-[52px]">
         <PersonEvents events={zachEvents} />
       </div>
 
       {/* Arianne */}
-      <div className="flex-1 px-3 py-3 border-l border-rose-100 bg-rose-50/10 min-h-[52px]">
-        <div className="text-[10px] font-semibold text-rose-400 uppercase tracking-widest mb-1">Arianne</div>
+      <div className="flex-1 px-3 py-3 border-l border-purple-100 bg-purple-50/10 min-h-[52px]">
         <PersonEvents events={arianneEvents} />
       </div>
 
@@ -141,25 +139,68 @@ function MonthHeader({ dateStr }) {
   );
 }
 
+// ── Column header ─────────────────────────────────────────────────────────────
+
+function ColumnHeader() {
+  return (
+    <div className="flex border-b-2 border-gray-100 bg-white sticky top-0 z-20 shadow-sm">
+      <div className="w-24 flex-shrink-0 px-3 py-2" />
+      <div className="flex-1 px-3 py-2 border-l border-cyan-100 bg-cyan-50/30">
+        <span className="text-xs font-bold text-cyan-600 uppercase tracking-widest">Zach</span>
+      </div>
+      <div className="flex-1 px-3 py-2 border-l border-purple-100 bg-purple-50/30">
+        <span className="text-xs font-bold text-purple-600 uppercase tracking-widest">Arianne</span>
+      </div>
+      <div className="w-8 flex-shrink-0" />
+    </div>
+  );
+}
+
 // ── Main ListView ─────────────────────────────────────────────────────────────
 
-// Build 120 days starting from 7 days before today
-function buildDays(count = 120) {
+function buildUpcomingDays(count = 120) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return Array.from({ length: count }, (_, i) =>
-    format(addDays(today, i - 7), 'yyyy-MM-dd')
+    format(addDays(today, i), 'yyyy-MM-dd')
+  );
+}
+
+function buildPastDays(count = 90) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  // Go back `count` days, up to yesterday
+  return Array.from({ length: count }, (_, i) =>
+    format(subDays(today, count - i), 'yyyy-MM-dd')
   );
 }
 
 export function ListView({ events, onDayClick, onAddEntry, isReadOnly }) {
-  const days = useMemo(() => buildDays(127), []); // 7 before + 120 ahead
+  const [showArchive, setShowArchive] = useState(false);
+
+  const upcomingDays = useMemo(() => buildUpcomingDays(120), []);
+  const pastDays = useMemo(() => buildPastDays(90), []);
+  const days = showArchive ? pastDays : upcomingDays;
 
   let lastMonth = null;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-4">
+    <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
+      {/* Archive toggle */}
+      <div className="flex items-center justify-between px-1">
+        <span className="text-sm font-semibold text-gray-700">
+          {showArchive ? 'Past 90 days' : 'Upcoming'}
+        </span>
+        <button
+          onClick={() => setShowArchive(v => !v)}
+          className="text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer border border-indigo-200 rounded-full px-3 py-1 hover:bg-indigo-50 transition-colors"
+        >
+          {showArchive ? '← Back to Upcoming' : '🗂 Archive'}
+        </button>
+      </div>
+
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <ColumnHeader />
         {days.map(dateStr => {
           const month = dateStr.slice(0, 7);
           const showMonthHeader = month !== lastMonth;
