@@ -4,12 +4,112 @@ import { Button } from '../ui/Button';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { parseCSV, downloadTemplate } from '../../services/csvImport';
 import { parseEmailText } from '../../services/emailParser';
+import { fetchAndParseSheet } from '../../services/sheetsImport';
 import { PEOPLE, PERSON_LABELS } from '../../constants';
 
 const TABS = [
-  { key: 'csv', label: '📊 Google Sheets / CSV' },
-  { key: 'email', label: '✉️ Paste Email' },
+  { key: 'sheet', label: '📋 Joint Calendar' },
+  { key: 'csv', label: '📊 CSV' },
+  { key: 'email', label: '✉️ Email' },
 ];
+
+// ─── Joint Calendar Tab ───────────────────────────────────────────────────────
+
+function SheetTab({ onImport }) {
+  const [status, setStatus] = useState('idle'); // idle | loading | preview | error
+  const [events, setEvents] = useState([]);
+  const [error, setError] = useState('');
+
+  async function handleFetch() {
+    setStatus('loading');
+    setError('');
+    try {
+      const parsed = await fetchAndParseSheet();
+      setEvents(parsed);
+      setStatus('preview');
+    } catch (err) {
+      setError(err.message || 'Failed to load sheet');
+      setStatus('error');
+    }
+  }
+
+  function handleImport() {
+    onImport(events);
+  }
+
+  const locationEvents = events.filter(e => e.type === 'location');
+  const togetherEvents = events.filter(e => e.type === 'together');
+  const zachEvents = locationEvents.filter(e => e.person === 'zach');
+  const ariEvents = locationEvents.filter(e => e.person === 'arianne');
+
+  return (
+    <div className="space-y-4">
+      <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-800 space-y-1">
+        <p className="font-medium">Import from your Joint Calendar spreadsheet</p>
+        <p className="text-xs text-indigo-600">
+          Reads locations for Zach &amp; Arianne, together dates, and kids flags directly from your Google Sheet.
+        </p>
+      </div>
+
+      {status === 'idle' && (
+        <Button onClick={handleFetch} className="w-full justify-center">
+          📋 Load from Joint Calendar
+        </Button>
+      )}
+
+      {status === 'loading' && (
+        <div className="flex items-center justify-center gap-2 py-6 text-gray-500">
+          <LoadingSpinner size="sm" />
+          <span className="text-sm">Fetching sheet data…</span>
+        </div>
+      )}
+
+      {status === 'error' && (
+        <div className="space-y-3">
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            ⚠ {error}
+          </div>
+          <Button variant="secondary" onClick={handleFetch} className="w-full justify-center">
+            Try Again
+          </Button>
+        </div>
+      )}
+
+      {status === 'preview' && (
+        <div className="space-y-3">
+          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-800">
+            <p className="font-medium mb-1">✓ Ready to import {events.length} events</p>
+            <ul className="text-xs text-emerald-700 space-y-0.5">
+              <li>📍 {zachEvents.length} Zach location entries ({zachEvents.filter(e => e.hasKids).length} with kids)</li>
+              <li>📍 {ariEvents.length} Arianne location entries</li>
+              <li>💚 {togetherEvents.length} together periods</li>
+            </ul>
+          </div>
+
+          <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100 text-xs">
+            {events.map((e, i) => (
+              <div key={i} className="px-3 py-1.5 flex items-center gap-2">
+                <span>{e.type === 'together' ? '💚' : e.person === 'zach' ? '🔵' : '🟣'}</span>
+                <span className="font-medium">
+                  {e.type === 'together' ? 'Together' : `${e.person === 'zach' ? 'Zach' : 'Arianne'} · ${e.city}`}
+                  {e.hasKids ? ' 👧' : ''}
+                </span>
+                <span className="text-gray-400 ml-auto">{e.dateFrom} – {e.dateTo}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-2">
+            <Button onClick={handleImport} className="flex-1 justify-center">
+              Import All {events.length} Events
+            </Button>
+            <Button variant="secondary" onClick={() => setStatus('idle')}>Reset</Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── CSV Tab ──────────────────────────────────────────────────────────────────
 
@@ -227,7 +327,7 @@ function EmailTab({ onImport }) {
 // ─── Main modal ───────────────────────────────────────────────────────────────
 
 export function ImportModal({ isOpen, onClose, onImport }) {
-  const [activeTab, setActiveTab] = useState('csv');
+  const [activeTab, setActiveTab] = useState('sheet');
 
   function handleImport(events) {
     onImport(events);
@@ -252,6 +352,7 @@ export function ImportModal({ isOpen, onClose, onImport }) {
         ))}
       </div>
 
+      {activeTab === 'sheet' && <SheetTab onImport={handleImport} />}
       {activeTab === 'csv' && <CSVTab onImport={handleImport} />}
       {activeTab === 'email' && <EmailTab onImport={handleImport} />}
     </Modal>
