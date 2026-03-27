@@ -1,19 +1,11 @@
 import { useState } from 'react';
-import { DateRangePicker } from '../ui/DateRangePicker';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { getApiKey, saveApiKey } from '../../services/flightLookup';
 
 export function Header({
-  start,
-  end,
-  activePreset,
-  onPreset,
-  onCustomRange,
   onAddEvent,
   onImport,
-  activeView,
-  onViewChange,
   isLive,
   isReadOnly,
 }) {
@@ -27,102 +19,64 @@ export function Header({
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-sm border-b border-gray-200 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-semibold text-gray-900">Travel Tracker</h1>
-                {isLive && (
-                  <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
-                    Live
-                  </span>
-                )}
-                {isReadOnly && (
-                  <span className="bg-amber-100 text-amber-700 rounded-full px-3 py-1 text-xs font-medium">
-                    View Only
-                  </span>
-                )}
-              </div>
+      <header className="sticky top-0 z-40 bg-white border-b border-gray-100">
+        <div className="max-w-5xl mx-auto px-5 py-3.5 flex items-center justify-between gap-4">
+          {/* Left: title + status */}
+          <div className="flex items-center gap-3">
+            <span className="text-xl">✈️</span>
+            <h1 className="text-base font-semibold text-gray-900 tracking-tight">Travel Tracker</h1>
+            {isLive && (
+              <span className="hidden sm:flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                Live
+              </span>
+            )}
+            {isReadOnly && (
+              <span className="text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5">
+                View only
+              </span>
+            )}
+          </div>
 
-              {/* View toggle: Calendar / All Events */}
-              <div className="bg-gray-100 rounded-full p-1 flex gap-0.5">
-                <button
-                  onClick={() => onViewChange('calendar')}
-                  className={`px-4 py-1 text-sm font-medium rounded-full transition-all cursor-pointer ${
-                    activeView === 'calendar'
-                      ? 'bg-white shadow-sm text-gray-900'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Calendar
-                </button>
-                {!isReadOnly && (
-                  <button
-                    onClick={() => onViewChange('events')}
-                    className={`px-4 py-1 text-sm font-medium rounded-full transition-all cursor-pointer ${
-                      activeView === 'events'
-                        ? 'bg-white shadow-sm text-gray-900'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    All Events
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              {activeView === 'calendar' && (
-                <DateRangePicker
-                  start={start}
-                  end={end}
-                  activePreset={activePreset}
-                  onPreset={onPreset}
-                  onCustom={onCustomRange}
-                />
-              )}
-
-              {/* Settings icon button */}
+          {/* Right: actions */}
+          <div className="flex items-center gap-2">
+            {!isReadOnly && onImport && (
               <button
-                onClick={() => setSettingsOpen(true)}
-                title="Flight API settings"
-                className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+                onClick={onImport}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
+                Import
               </button>
+            )}
 
-              {!isReadOnly && onImport && (
-                <button
-                  onClick={onImport}
-                  className="px-4 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors cursor-pointer"
-                >
-                  Import
-                </button>
-              )}
+            <button
+              onClick={() => setSettingsOpen(true)}
+              title="Settings"
+              className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
 
-              {!isReadOnly && onAddEvent && (
-                <button
-                  onClick={() => onAddEvent()}
-                  className="px-4 py-1.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-full transition-colors cursor-pointer"
-                >
-                  + Add Event
-                </button>
-              )}
-            </div>
+            {!isReadOnly && onAddEvent && (
+              <button
+                onClick={() => onAddEvent()}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors cursor-pointer shadow-sm"
+              >
+                <span className="text-base leading-none">+</span>
+                <span>Add</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
 
-      <Modal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} title="Flight Lookup Settings">
+      <Modal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} title="Settings">
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
-            Add a free{' '}
-            <span className="font-medium text-gray-800">AviationStack</span> API key to enable automatic flight detail lookup. Without a key, you can still enter flight details manually.
+            Add a free <span className="font-medium text-gray-800">AviationStack</span> API key to enable automatic flight detail lookup. Without a key, you can still enter flight details manually.
           </p>
           <p className="text-xs text-gray-500">
             Get a free key at aviationstack.com (100 requests/month). The key is stored only in your browser.

@@ -3,10 +3,15 @@ import { WeekView } from './WeekView';
 import { MonthView } from './MonthView';
 import { ListView } from './ListView';
 import { DayDetailModal } from './DayDetailModal';
-import { VIEW_MODES } from '../../constants';
+
+const VIEWS = [
+  { key: 'list',  label: 'List' },
+  { key: 'week',  label: 'Week' },
+  { key: 'month', label: 'Month' },
+];
 
 export function CalendarView({ events, onAddEvent, onEditEvent, onDeleteEvent, onSaveEvent, isReadOnly }) {
-  const [viewMode, setViewMode] = useState(VIEW_MODES.WEEK);
+  const [viewMode, setViewMode] = useState('list');
   const [dayDetailDate, setDayDetailDate] = useState(null);
   const [dayDetailOpen, setDayDetailOpen] = useState(false);
 
@@ -26,34 +31,30 @@ export function CalendarView({ events, onAddEvent, onEditEvent, onDeleteEvent, o
 
   function handleDeleteFromDetail(id) {
     onDeleteEvent?.(id);
-    // Keep modal open so user can see remaining events
   }
 
   if (!events) {
     return (
-      <div className="flex-1 flex items-center justify-center text-gray-400 py-24">
-        <p>Loading events...</p>
+      <div className="flex items-center justify-center py-24 text-gray-400 text-sm">
+        Loading…
       </div>
     );
   }
 
   return (
     <div>
-      {/* View mode toggle */}
-      <div className="max-w-5xl mx-auto px-4 pt-4 flex justify-end">
-        <div className="bg-gray-100 rounded-full p-1 flex gap-0.5">
-          {[
-            { key: VIEW_MODES.WEEK, label: 'Week' },
-            { key: VIEW_MODES.MONTH, label: 'Month' },
-            { key: 'list', label: 'List' },
-          ].map(({ key, label }) => (
+      {/* View toggle — sits just below the header */}
+      <div className="max-w-5xl mx-auto px-5 pt-4 pb-1 flex items-center justify-between">
+        {/* Segmented control */}
+        <div className="inline-flex bg-white border border-gray-200 rounded-lg p-0.5 shadow-sm gap-0.5">
+          {VIEWS.map(({ key, label }) => (
             <button
               key={key}
               onClick={() => setViewMode(key)}
-              className={`px-4 py-1 text-sm font-medium rounded-full transition-all cursor-pointer ${
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all cursor-pointer ${
                 viewMode === key
-                  ? 'bg-white shadow-sm text-gray-900'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-800'
               }`}
             >
               {label}
@@ -62,7 +63,7 @@ export function CalendarView({ events, onAddEvent, onEditEvent, onDeleteEvent, o
         </div>
       </div>
 
-      {viewMode === VIEW_MODES.WEEK && (
+      {viewMode === 'week' && (
         <WeekView
           events={events}
           onAddEntry={handleAddEntry}
@@ -70,7 +71,7 @@ export function CalendarView({ events, onAddEvent, onEditEvent, onDeleteEvent, o
           onDayClick={handleDayClick}
         />
       )}
-      {viewMode === VIEW_MODES.MONTH && (
+      {viewMode === 'month' && (
         <MonthView
           events={events}
           onAddEntry={handleAddEntry}
