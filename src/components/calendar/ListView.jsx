@@ -364,7 +364,7 @@ function PersonEvents({ events, person }) {
 
 // ── Day row ───────────────────────────────────────────────────────────────────
 
-function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, isReadOnly }) {
+function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEvent, isReadOnly }) {
   const [inlineOpen, setInlineOpen] = useState(false);
 
   const today         = isDateToday(dateStr);
@@ -478,13 +478,20 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, isReadOn
             </div>
           ) : (
             <div className="px-3 py-3.5 flex flex-col gap-1">
-              {/* Existing entries — click opens day detail modal */}
+              {/* Existing entries — tap each one to edit it directly */}
               {travelEvents.length > 0 && (
-                <div
-                  className="cursor-pointer"
-                  onClick={e => { e.stopPropagation(); onDayClick?.(dateStr); }}
-                >
-                  <TravelDetails events={travelEvents} dateStr={dateStr} />
+                <div className="flex flex-col">
+                  {travelEvents.map((ev, i) => (
+                    <div
+                      key={ev.id || i}
+                      className="cursor-pointer rounded hover:bg-indigo-50/40 -mx-1 px-1 transition-colors pb-1.5 mb-1.5 border-b border-gray-100 last:border-b-0 last:pb-0 last:mb-0"
+                      onClick={e => { e.stopPropagation(); onEditEvent?.(ev); }}
+                      title="Tap to edit"
+                    >
+                      {ev.type === 'flight' && <FlightDetail event={ev} />}
+                      {ev.type === 'hotel'  && <HotelDetail  event={ev} dateStr={dateStr} />}
+                    </div>
+                  ))}
                 </div>
               )}
               {/* Add button */}
@@ -579,7 +586,7 @@ function buildPastDays(count = 90) {
 
 // ── Main ListView ─────────────────────────────────────────────────────────────
 
-export function ListView({ events, onDayClick, onAddEntry, onSaveEvent, isReadOnly }) {
+export function ListView({ events, onDayClick, onAddEntry, onSaveEvent, onEditEvent, isReadOnly }) {
   const [showArchive, setShowArchive] = useState(false);
 
   const upcomingDays = useMemo(() => buildUpcomingDays(180), []);
@@ -625,6 +632,7 @@ export function ListView({ events, onDayClick, onAddEntry, onSaveEvent, isReadOn
                 onDayClick={onDayClick}
                 onAddEntry={onAddEntry}
                 onSaveEvent={onSaveEvent}
+                onEditEvent={onEditEvent}
                 isReadOnly={isReadOnly}
               />
             </div>
