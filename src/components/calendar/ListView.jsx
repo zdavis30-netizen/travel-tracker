@@ -379,8 +379,8 @@ function LocationLabel({ event, person, onToggleKids }) {
         <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-0.5 ${dotColor}`} />
         <span className="text-sm font-semibold text-gray-800 leading-tight">{event.city}</span>
       </div>
-      {onToggleKids && (
-        event.hasKids ? (
+      {event.hasKids ? (
+        onToggleKids ? (
           <button
             onClick={e => { e.stopPropagation(); onToggleKids(event); }}
             title="Tap to remove kids"
@@ -389,6 +389,12 @@ function LocationLabel({ event, person, onToggleKids }) {
             👧 Kids
           </button>
         ) : (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100 leading-tight">
+            👧 Kids
+          </span>
+        )
+      ) : (
+        onToggleKids && (
           <button
             onClick={e => { e.stopPropagation(); onToggleKids(event); }}
             title="Tap to add kids"
