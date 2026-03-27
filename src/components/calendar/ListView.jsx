@@ -367,10 +367,10 @@ function ColumnHeader({ isReadOnly }) {
     <div className="flex border-b border-gray-100 bg-white sticky top-0 z-20">
       <div className="w-24 flex-shrink-0 px-4 py-2.5" />
       <div className="flex-1 px-3 py-2.5 border-l border-cyan-100/70">
-        <span className="text-xs font-semibold text-cyan-600 tracking-wide">Zach</span>
+        <span className="text-sm font-bold text-cyan-600">Zach</span>
       </div>
       <div className="flex-1 px-3 py-2.5 border-l border-purple-100/70">
-        <span className="text-xs font-semibold text-purple-600 tracking-wide">Arianne</span>
+        <span className="text-sm font-bold text-purple-600">Arianne</span>
       </div>
       <div className="w-52 flex-shrink-0 px-3 py-2.5 border-l border-gray-100">
         <span className="text-xs font-semibold text-gray-400 tracking-wide">Travel</span>
