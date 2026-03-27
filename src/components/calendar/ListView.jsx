@@ -652,7 +652,26 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
   }
 
   function handleToggleKids(locationEvent) {
-    onSaveEvent?.({ ...locationEvent, hasKids: !locationEvent.hasKids });
+    const { dateFrom, dateTo, hasKids } = locationEvent;
+
+    // Single-day event OR tapping the first day of the range → toggle whole event
+    if (dateFrom === dateTo || dateStr === dateFrom) {
+      onSaveEvent?.({ ...locationEvent, hasKids: !hasKids });
+      return;
+    }
+
+    // Multi-day event, tapping a date after the start → split at dateStr:
+    //   Segment A: dateFrom → (dateStr - 1), keeps original hasKids
+    //   Segment B: dateStr  → dateTo,        gets toggled hasKids
+    const dayBefore = format(subDays(parseISO(dateStr), 1), 'yyyy-MM-dd');
+
+    // Shorten the original event to end the day before the tap
+    onSaveEvent?.({ ...locationEvent, dateTo: dayBefore });
+
+    // Create a new event from the tapped date forward with toggled kids
+    // Omit id/fbId so handleSave treats it as a new event
+    const { id: _id, fbId: _fbId, ...rest } = locationEvent;
+    onSaveEvent?.({ ...rest, dateFrom: dateStr, dateTo, hasKids: !hasKids });
   }
 
   const hasContent = zachEvents.length > 0 || arianneEvents.length > 0
