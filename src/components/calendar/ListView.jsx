@@ -4,6 +4,114 @@ import { getEventsForPersonOnDate, getTogetherOnDate, getNotesForDate, getTravel
 import { isDateToday } from '../../utils/dateUtils';
 import { lookupFlight, getApiKey } from '../../services/flightLookup';
 
+// ── Weather helpers (Open-Meteo — free, no key needed) ────────────────────────
+
+function wmoIcon(code) {
+  if (code === 0)              return '☀️';
+  if (code === 1)              return '🌤️';
+  if (code === 2)              return '⛅';
+  if (code === 3)              return '☁️';
+  if (code <= 48)              return '🌫️';
+  if (code <= 55)              return '🌦️';
+  if (code <= 65)              return '🌧️';
+  if (code <= 77)              return '❄️';
+  if (code <= 82)              return '🌦️';
+  return '⛈️';
+}
+
+async function fetchCityWeather(city) {
+  try {
+    const geo = await fetch(
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`
+    ).then(r => r.json());
+    if (!geo.results?.length) return null;
+    const { latitude, longitude } = geo.results[0];
+    const wx = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}` +
+      `&daily=weathercode,temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&timezone=auto&forecast_days=1`
+    ).then(r => r.json());
+    const code = wx.daily?.weathercode?.[0];
+    const hi   = Math.round(wx.daily?.temperature_2m_max?.[0]);
+    const lo   = Math.round(wx.daily?.temperature_2m_min?.[0]);
+    if (code == null || isNaN(hi) || isNaN(lo)) return null;
+    return { icon: wmoIcon(code), hi, lo };
+  } catch { return null; }
+}
+
+// ── Together stats helpers ─────────────────────────────────────────────────────
+
+function buildTogetherStats(events, upcomingDays) {
+  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const byMonth = {};
+  let total = 0;
+
+  upcomingDays.forEach(dateStr => {
+    const zachCities    = new Set(events.filter(e => e.type === 'location' && e.person === 'zach'    && coversDate(e, dateStr)).map(e => e.city));
+    const arianneCities = new Set(events.filter(e => e.type === 'location' && e.person === 'arianne' && coversDate(e, dateStr)).map(e => e.city));
+    const sameCity      = [...zachCities].some(c => arianneCities.has(c));
+    const explicit      = events.some(e => e.type === 'together' && coversDate(e, dateStr));
+
+    if (sameCity || explicit) {
+      total++;
+      const [year, mon] = dateStr.split('-');
+      const label = `${MONTH_NAMES[parseInt(mon, 10) - 1]}`;
+      const key   = `${year}-${mon}`;
+      if (!byMonth[key]) byMonth[key] = { label, count: 0 };
+      byMonth[key].count++;
+    }
+  });
+
+  return { total, byMonth };
+}
+
+// ── Together stats panel ───────────────────────────────────────────────────────
+
+function TogetherStats({ events, upcomingDays }) {
+  const { total, byMonth } = useMemo(
+    () => buildTogetherStats(events, upcomingDays),
+    [events, upcomingDays]
+  );
+
+  if (total === 0) return null;
+
+  const months = Object.values(byMonth).filter(m => m.count > 0);
+  const maxCount = Math.max(...months.map(m => m.count));
+
+  return (
+    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl px-4 py-4">
+      {/* Headline */}
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-lg">💚</span>
+        <div>
+          <p className="text-sm font-bold text-emerald-800">
+            {total} day{total !== 1 ? 's' : ''} together in the next 6 months
+          </p>
+          <p className="text-[11px] text-emerald-600">based on overlapping city stays</p>
+        </div>
+      </div>
+
+      {/* Month breakdown */}
+      {months.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          {months.map(({ label, count }) => (
+            <div key={label} className="flex-shrink-0 flex flex-col items-center gap-1">
+              {/* Mini bar */}
+              <div className="w-8 h-10 bg-emerald-100 rounded-md flex items-end overflow-hidden">
+                <div
+                  className="w-full bg-emerald-400 rounded-md transition-all"
+                  style={{ height: `${Math.round((count / maxCount) * 100)}%` }}
+                />
+              </div>
+              <span className="text-[10px] font-semibold text-emerald-700">{count}d</span>
+              <span className="text-[10px] text-emerald-500">{label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── City summary helpers ───────────────────────────────────────────────────────
 
 function buildCitySummary(events, upcomingDays) {
@@ -38,6 +146,23 @@ function CitySummary({ events, upcomingDays }) {
     () => buildCitySummary(events, upcomingDays),
     [events, upcomingDays]
   );
+  const [weather, setWeather] = useState({}); // city -> { icon, hi, lo } | null
+
+  // Find cities active in the next 14 days and fetch their weather
+  useEffect(() => {
+    const soon = upcomingDays.slice(0, 14);
+    const activeCities = new Set(
+      events
+        .filter(e => e.type === 'location' && soon.some(d => coversDate(e, d)))
+        .map(e => e.city)
+    );
+    activeCities.forEach(async city => {
+      if (weather[city] !== undefined) return; // already fetched or in flight
+      setWeather(prev => ({ ...prev, [city]: 'loading' }));
+      const data = await fetchCityWeather(city);
+      setWeather(prev => ({ ...prev, [city]: data }));
+    });
+  }, [events, upcomingDays]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (summary.length === 0) return null;
 
@@ -49,26 +174,33 @@ function CitySummary({ events, upcomingDays }) {
         Where you'll be · next 6 months
       </p>
       <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
-        {summary.map(({ city, zachDays, arianneDays, totalDays }) => {
-          const zachPct   = Math.round((zachDays   / totalUpcoming) * 100);
+        {summary.map(({ city, zachDays, arianneDays }) => {
+          const zachPct    = Math.round((zachDays    / totalUpcoming) * 100);
           const ariannePct = Math.round((arianneDays / totalUpcoming) * 100);
-          const isBoth = zachDays > 0 && arianneDays > 0;
+          const isBoth     = zachDays > 0 && arianneDays > 0;
+          const wx         = weather[city];
 
           return (
             <div
               key={city}
               className="flex-shrink-0 min-w-[130px] bg-gray-50/80 border border-gray-100 rounded-xl px-3 py-3"
             >
-              {/* City name */}
-              <p className="text-sm font-bold text-gray-800 mb-2.5 truncate">{city}</p>
+              {/* City name + weather */}
+              <div className="flex items-start justify-between mb-2.5 gap-1">
+                <p className="text-sm font-bold text-gray-800 truncate">{city}</p>
+                {wx && wx !== 'loading' && (
+                  <div className="flex-shrink-0 flex items-center gap-0.5 text-right">
+                    <span className="text-base leading-none">{wx.icon}</span>
+                    <span className="text-[11px] font-semibold text-gray-700 leading-none">{wx.hi}°</span>
+                    <span className="text-[10px] text-gray-400 leading-none">/{wx.lo}°</span>
+                  </div>
+                )}
+              </div>
 
               {/* Two-tone bar */}
               <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden mb-2.5 flex">
                 {zachDays > 0 && (
-                  <div
-                    className="h-full bg-cyan-400 rounded-l-full"
-                    style={{ width: `${zachPct}%` }}
-                  />
+                  <div className="h-full bg-cyan-400 rounded-l-full" style={{ width: `${zachPct}%` }} />
                 )}
                 {arianneDays > 0 && (
                   <div
@@ -100,9 +232,7 @@ function CitySummary({ events, upcomingDays }) {
                   <div className="flex items-center gap-1.5 mt-0.5 pt-1.5 border-t border-gray-100">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
                     <span className="text-xs text-gray-500">
-                      <span className="font-semibold text-gray-700">
-                        {Math.min(zachDays, arianneDays)}d
-                      </span> together
+                      <span className="font-semibold text-gray-700">{Math.min(zachDays, arianneDays)}d</span> together
                     </span>
                   </div>
                 )}
@@ -738,9 +868,12 @@ export function ListView({ events, onDayClick, onAddEntry, onSaveEvent, onEditEv
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-4 space-y-3">
-      {/* City summary — only in upcoming mode */}
+      {/* Together stats + city summary — only in upcoming mode */}
       {!showArchive && (
-        <CitySummary events={events} upcomingDays={upcomingDays} />
+        <>
+          <TogetherStats events={events} upcomingDays={upcomingDays} />
+          <CitySummary   events={events} upcomingDays={upcomingDays} />
+        </>
       )}
 
       {/* Archive toggle */}
