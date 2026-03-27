@@ -49,7 +49,8 @@ export function useEvents() {
       setEvents(prev => {
         const event = prev.find(e => e.id === id);
         if (event?.fbId) update(ref(db, `events/${event.fbId}`), patch);
-        return prev; // Firebase onValue will update state
+        // Optimistically update local state immediately — don't wait for onValue round-trip
+        return prev.map(e => (e.id === id ? { ...e, ...patch } : e));
       });
     } else {
       setEvents(prev => prev.map(e => (e.id === id ? { ...e, ...patch } : e)));
@@ -61,7 +62,8 @@ export function useEvents() {
       setEvents(prev => {
         const event = prev.find(e => e.id === id);
         if (event?.fbId) remove(ref(db, `events/${event.fbId}`));
-        return prev; // Firebase onValue will update state
+        // Optimistically remove from local state immediately
+        return prev.filter(e => e.id !== id);
       });
     } else {
       setEvents(prev => prev.filter(e => e.id !== id));
