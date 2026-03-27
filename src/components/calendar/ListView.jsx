@@ -979,11 +979,12 @@ function buildUpcomingDays(count = 120) {
   );
 }
 
-function buildPastDays(count = 90) {
+function buildPastDays(count = 180) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  // Most recent first (yesterday at top)
   return Array.from({ length: count }, (_, i) =>
-    format(subDays(today, count - i), 'yyyy-MM-dd')
+    format(subDays(today, i + 1), 'yyyy-MM-dd')
   );
 }
 
@@ -993,7 +994,7 @@ export function ListView({ events, onDayClick, onAddEntry, onSaveEvent, onEditEv
   const [showArchive, setShowArchive] = useState(false);
 
   const upcomingDays = useMemo(() => buildUpcomingDays(180), []);
-  const pastDays     = useMemo(() => buildPastDays(90),     []);
+  const pastDays     = useMemo(() => buildPastDays(180),    []);
   const days = showArchive ? pastDays : upcomingDays;
 
   let lastMonth = null;
@@ -1011,7 +1012,7 @@ export function ListView({ events, onDayClick, onAddEntry, onSaveEvent, onEditEv
       {/* Archive toggle */}
       <div className="flex items-center justify-between px-1">
         <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          {showArchive ? 'Past 90 days' : 'Upcoming 6 months'}
+          {showArchive ? 'Past 6 months' : 'Upcoming 6 months'}
         </span>
         <button
           onClick={() => setShowArchive(v => !v)}
