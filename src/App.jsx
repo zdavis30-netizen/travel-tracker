@@ -13,14 +13,16 @@ function App() {
   const [importOpen, setImportOpen] = useState(false);
   const [editEvent, setEditEvent] = useState(null);
   const [defaultDate, setDefaultDate] = useState(null);
+  const [defaultType, setDefaultType] = useState(null);
 
-  function handleAddEvent(dateStr, editEventOverride) {
+  function handleAddEvent(dateStr, editEventOverride, type) {
     if (editEventOverride) {
       setEditEvent(editEventOverride);
     } else {
       setEditEvent(null);
     }
     setDefaultDate(dateStr || null);
+    setDefaultType(type || null);
     setModalOpen(true);
   }
 
@@ -85,6 +87,7 @@ function App() {
             onSave={handleSave}
             editEvent={editEvent}
             defaultDate={defaultDate}
+            defaultType={defaultType}
           />
 
           <ImportModal

@@ -5,17 +5,19 @@ import { FlightForm } from './FlightForm';
 import { HotelForm } from './HotelForm';
 import { TogetherForm } from './TogetherForm';
 import { NoteForm } from './NoteForm';
+import { PlanForm } from './PlanForm';
 
 const TABS = [
   { key: 'location', label: '📍 Location' },
-  { key: 'flight', label: '✈ Flight' },
-  { key: 'hotel', label: '🏨 Hotel' },
+  { key: 'flight',   label: '✈ Flight' },
+  { key: 'hotel',    label: '🏨 Hotel' },
   { key: 'together', label: '💚 Together' },
-  { key: 'note', label: '📝 Note' },
+  { key: 'plan',     label: '📅 Plan' },
+  { key: 'note',     label: '📝 Note' },
 ];
 
-export function EventModal({ isOpen, onClose, onSave, editEvent, defaultDate }) {
-  const [activeTab, setActiveTab] = useState(editEvent?.type || 'location');
+export function EventModal({ isOpen, onClose, onSave, editEvent, defaultDate, defaultType }) {
+  const [activeTab, setActiveTab] = useState(editEvent?.type || defaultType || 'location');
 
   const isEdit = !!editEvent;
   const title = isEdit ? `Edit ${editEvent.type}` : 'Add Event';
@@ -57,10 +59,11 @@ export function EventModal({ isOpen, onClose, onSave, editEvent, defaultDate }) 
       )}
 
       {activeTab === 'location' && <LocationForm {...formProps} />}
-      {activeTab === 'flight' && <FlightForm {...formProps} />}
-      {activeTab === 'hotel' && <HotelForm {...formProps} />}
+      {activeTab === 'flight'   && <FlightForm   {...formProps} />}
+      {activeTab === 'hotel'    && <HotelForm    {...formProps} />}
       {activeTab === 'together' && <TogetherForm {...formProps} />}
-      {activeTab === 'note' && <NoteForm {...formProps} />}
+      {activeTab === 'plan'     && <PlanForm     {...formProps} />}
+      {activeTab === 'note'     && <NoteForm     {...formProps} />}
     </Modal>
   );
 }

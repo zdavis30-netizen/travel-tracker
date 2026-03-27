@@ -1,6 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { format, parseISO, addDays, subDays, isWeekend } from 'date-fns';
-import { getEventsForPersonOnDate, getTogetherOnDate, getNotesForDate, getTravelEventsForDate, coversDate } from '../../utils/eventUtils';
+import { getEventsForPersonOnDate, getTogetherOnDate, getNotesForDate, getTravelEventsForDate, getPlansForDate, coversDate } from '../../utils/eventUtils';
+import { PLAN_CATEGORIES } from '../forms/PlanForm';
 import { isDateToday } from '../../utils/dateUtils';
 import { lookupFlight, getApiKey } from '../../services/flightLookup';
 
@@ -401,6 +402,30 @@ function LocationLabel({ event, person, onToggleKids }) {
   );
 }
 
+// ── Plans column ──────────────────────────────────────────────────────────────
+
+const CATEGORY_EMOJI = Object.fromEntries(PLAN_CATEGORIES.map(c => [c.key, c.emoji]));
+
+function PlanChip({ plan, onEdit }) {
+  const emoji = CATEGORY_EMOJI[plan.category] || '📌';
+  return (
+    <button
+      onClick={e => { e.stopPropagation(); onEdit?.(plan); }}
+      className="w-full text-left flex items-start gap-1 group"
+    >
+      <span className="text-[11px] mt-0.5 flex-shrink-0">{emoji}</span>
+      <div className="min-w-0">
+        <p className="text-[11px] font-medium text-gray-700 group-hover:text-indigo-600 leading-tight truncate transition-colors">
+          {plan.title}
+        </p>
+        {plan.time && (
+          <p className="text-[10px] text-gray-400 leading-tight">{plan.time}</p>
+        )}
+      </div>
+    </button>
+  );
+}
+
 // ── Travel column chips ────────────────────────────────────────────────────────
 
 const PERSON_COLOR = {
@@ -644,6 +669,7 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
   const zachEvents    = getEventsForPersonOnDate(events, 'zach',    dateStr);
   const arianneEvents = getEventsForPersonOnDate(events, 'arianne', dateStr);
   const travelEvents  = getTravelEventsForDate(events, dateStr);
+  const planEvents    = getPlansForDate(events, dateStr);
   const notes         = getNotesForDate(events, dateStr);
 
   function handleInlineSave(event) {
@@ -675,7 +701,7 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
   }
 
   const hasContent = zachEvents.length > 0 || arianneEvents.length > 0
-    || travelEvents.length > 0 || notes.length > 0 || together;
+    || travelEvents.length > 0 || planEvents.length > 0 || notes.length > 0 || together;
 
   const date    = parseISO(dateStr);
   const dayName = format(date, 'EEE');
@@ -700,8 +726,10 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
         </div>
         <div className="flex-1 h-9 border-l border-gray-50" />
         <div className="flex-1 h-9 border-l border-gray-50" />
+        {/* Plans cell (empty) */}
+        <div className="w-40 flex-shrink-0 h-9 border-l border-gray-50" />
         {/* Travel cell */}
-        <div className={`w-52 flex-shrink-0 border-l border-gray-50 ${inlineOpen ? 'p-2 bg-indigo-50/30' : 'h-9 flex items-center px-3'}`}>
+        <div className={`w-44 flex-shrink-0 border-l border-gray-50 ${inlineOpen ? 'p-2 bg-indigo-50/30' : 'h-9 flex items-center px-3'}`}>
           {inlineOpen ? (
             <InlineTravelAdd
               dateStr={dateStr}
@@ -761,8 +789,23 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
           <PersonEvents events={arianneEvents} person="arianne" onToggleKids={isReadOnly ? undefined : handleToggleKids} />
         </div>
 
+        {/* Plans column */}
+        <div className="w-40 flex-shrink-0 border-l border-gray-100 min-h-[56px] px-3 py-3.5 flex flex-col gap-1">
+          {planEvents.map((plan, i) => (
+            <PlanChip key={plan.id || i} plan={plan} onEdit={isReadOnly ? undefined : onEditEvent} />
+          ))}
+          {!isReadOnly && (
+            <button
+              onClick={e => { e.stopPropagation(); onAddEntry?.(dateStr, 'plan'); }}
+              className={`text-left text-xs text-gray-300 hover:text-indigo-400 cursor-pointer transition-colors ${planEvents.length > 0 ? 'mt-0.5' : ''}`}
+            >
+              {planEvents.length === 0 ? '+ plan' : '+ add'}
+            </button>
+          )}
+        </div>
+
         {/* Travel column */}
-        <div className="w-52 flex-shrink-0 border-l border-gray-100 min-h-[56px] relative">
+        <div className="w-44 flex-shrink-0 border-l border-gray-100 min-h-[56px] relative">
           {inlineOpen ? (
             <div className="p-2 bg-indigo-50/30">
               <InlineTravelAdd
@@ -866,7 +909,10 @@ function ColumnHeader({ isReadOnly }) {
       <div className="flex-1 px-3 py-2.5 border-l border-purple-100/70">
         <span className="text-sm font-bold text-purple-600">Arianne</span>
       </div>
-      <div className="w-52 flex-shrink-0 px-3 py-2.5 border-l border-gray-100">
+      <div className="w-40 flex-shrink-0 px-3 py-2.5 border-l border-gray-100">
+        <span className="text-xs font-semibold text-gray-400 tracking-wide">Plans</span>
+      </div>
+      <div className="w-44 flex-shrink-0 px-3 py-2.5 border-l border-gray-100">
         <span className="text-xs font-semibold text-gray-400 tracking-wide">Travel</span>
       </div>
       {!isReadOnly && <div className="w-8 flex-shrink-0" />}

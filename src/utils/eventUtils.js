@@ -8,7 +8,7 @@ export function coversDate(event, dateStr) {
     const end = parseISO(event.dateTo);
     return isWithinInterval(date, { start, end });
   }
-  if (event.type === 'flight' || event.type === 'note') {
+  if (event.type === 'flight' || event.type === 'note' || event.type === 'plan') {
     return event.date === dateStr;
   }
   return false;
@@ -38,6 +38,11 @@ export function getTravelEventsForDate(events, dateStr) {
     if (e.type === 'hotel')  return e.dateFrom === dateStr || e.dateTo === dateStr;
     return false;
   });
+}
+
+// Returns all plan events for a specific date
+export function getPlansForDate(events, dateStr) {
+  return events.filter(e => e.type === 'plan' && e.date === dateStr);
 }
 
 // Resolves a display city for a person on a given date, preferring flight destination

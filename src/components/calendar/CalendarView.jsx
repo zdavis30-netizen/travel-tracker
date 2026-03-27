@@ -11,8 +11,8 @@ export function CalendarView({ events, onAddEvent, onEditEvent, onDeleteEvent, o
     setDayDetailOpen(true);
   }
 
-  function handleAddEntry(dateStr) {
-    onAddEvent?.(dateStr);
+  function handleAddEntry(dateStr, defaultType) {
+    onAddEvent?.(dateStr, null, defaultType);
   }
 
   function handleEditFromDetail(event) {
