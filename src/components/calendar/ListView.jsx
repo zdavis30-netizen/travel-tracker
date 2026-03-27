@@ -38,6 +38,99 @@ async function fetchCityWeather(city) {
   } catch { return null; }
 }
 
+// ── Needs-booking tracker ─────────────────────────────────────────────────────
+
+function NeedsBookingTracker({ events, onEditEvent, onSaveEvent }) {
+  const today = format(new Date(), 'yyyy-MM-dd');
+
+  const unbooked = useMemo(() => {
+    return events
+      .filter(e => {
+        if (!e.needsBooking) return false;
+        if (e.type === 'flight') return (e.date || '') >= today;
+        if (e.type === 'hotel')  return (e.dateFrom || '') >= today;
+        return false;
+      })
+      .sort((a, b) => {
+        const da = a.type === 'flight' ? a.date : a.dateFrom;
+        const db = b.type === 'flight' ? b.date : b.dateFrom;
+        return da < db ? -1 : da > db ? 1 : 0;
+      });
+  }, [events, today]);
+
+  if (unbooked.length === 0) return null;
+
+  function markBooked(ev) {
+    onSaveEvent?.({ ...ev, needsBooking: false });
+  }
+
+  return (
+    <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-4">
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-base">⚠️</span>
+        <p className="text-sm font-bold text-red-700">
+          {unbooked.length} item{unbooked.length !== 1 ? 's' : ''} need{unbooked.length === 1 ? 's' : ''} booking
+        </p>
+      </div>
+
+      {/* Items */}
+      <div className="flex flex-col gap-2">
+        {unbooked.map(ev => {
+          const isFlight = ev.type === 'flight';
+          const personColor = ev.person === 'zach' ? 'bg-cyan-400' : 'bg-purple-400';
+          const personLabel = ev.person === 'zach' ? 'Zach' : 'Arianne';
+          const dateLabel   = isFlight
+            ? format(parseISO(ev.date), 'MMM d')
+            : `${format(parseISO(ev.dateFrom), 'MMM d')} – ${format(parseISO(ev.dateTo), 'MMM d')}`;
+          const nameLabel   = isFlight
+            ? ev.flightNumber
+            : (ev.hotelName || ev.city || 'Hotel');
+
+          return (
+            <div
+              key={ev.id || nameLabel}
+              className="flex items-center gap-3 bg-white border border-red-100 rounded-lg px-3 py-2.5"
+            >
+              {/* Person dot */}
+              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${personColor}`} />
+
+              {/* Details */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">{isFlight ? '✈️' : '🏨'}</span>
+                  <span className="text-sm font-semibold text-gray-800 truncate">{nameLabel}</span>
+                </div>
+                <p className="text-[11px] text-gray-500">
+                  {personLabel} · {dateLabel}
+                  {isFlight && ev.fromCity && ev.toCity && ` · ${ev.fromCity} → ${ev.toCity}`}
+                  {!isFlight && ev.city && ` · ${ev.city}`}
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => onEditEvent?.(ev)}
+                  className="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer transition-colors"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => markBooked(ev)}
+                  className="text-[11px] px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md font-medium cursor-pointer transition-colors"
+                >
+                  ✓ Booked
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Together stats helpers ─────────────────────────────────────────────────────
 
 function buildTogetherStats(events, upcomingDays) {
@@ -868,6 +961,15 @@ export function ListView({ events, onDayClick, onAddEntry, onSaveEvent, onEditEv
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-4 space-y-3">
+      {/* Needs booking tracker — always visible when there are unbooked items */}
+      {!showArchive && !isReadOnly && (
+        <NeedsBookingTracker
+          events={events}
+          onEditEvent={onEditEvent}
+          onSaveEvent={onSaveEvent}
+        />
+      )}
+
       {/* Together stats + city summary — only in upcoming mode */}
       {!showArchive && (
         <>
