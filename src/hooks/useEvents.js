@@ -38,6 +38,8 @@ export function useEvents() {
     const newEvent = { ...event, id: event.id || crypto.randomUUID(), createdAt: event.createdAt || Date.now() };
     if (isFirebaseConfigured) {
       push(ref(db, 'events'), newEvent);
+      // Optimistically update local state immediately — don't wait for onValue round-trip
+      setEvents(prev => [...prev, newEvent]);
     } else {
       setEvents(prev => [...prev, newEvent]);
     }
