@@ -666,7 +666,7 @@ function TravelPopover({ event, dateStr, onEdit, onClose, onSaveEvent }) {
 
 // ── Day row ───────────────────────────────────────────────────────────────────
 
-function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEvent, isReadOnly }) {
+function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEvent, onDeleteEvent, isReadOnly }) {
   const [inlineOpen,       setInlineOpen]       = useState(false);
   const [expandedTravelId, setExpandedTravelId] = useState(null);
 
@@ -681,6 +681,17 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
   function handleInlineSave(event) {
     onSaveEvent?.(event);
     setInlineOpen(false);
+  }
+
+  function handleToggleTogether() {
+    if (together) {
+      // Delete the existing together event
+      const ev = events.find(e => e.type === 'together' && coversDate(e, dateStr));
+      if (ev?.id) onDeleteEvent?.(ev.id);
+    } else {
+      // Create a single-day together event
+      onSaveEvent?.({ type: 'together', dateFrom: dateStr, dateTo: dateStr });
+    }
   }
 
   function handleToggleKids(locationEvent) {
@@ -782,7 +793,15 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
           <span className={`text-sm font-bold leading-tight mt-0.5 ${
             today ? 'text-indigo-700' : 'text-gray-800'
           }`}>{dayNum}</span>
-          {together && <span className="text-sm mt-1.5" title="Together">💚</span>}
+          {!isReadOnly ? (
+            <button
+              onClick={e => { e.stopPropagation(); handleToggleTogether(); }}
+              title={together ? 'Together — tap to remove' : 'Tap to mark as together'}
+              className={`text-sm mt-1.5 cursor-pointer transition-opacity leading-none ${together ? 'opacity-100' : 'opacity-20 hover:opacity-60'}`}
+            >💚</button>
+          ) : (
+            together && <span className="text-sm mt-1.5">💚</span>
+          )}
         </div>
 
         {/* Zach */}
@@ -970,7 +989,7 @@ function buildPastDays(count = 90) {
 
 // ── Main ListView ─────────────────────────────────────────────────────────────
 
-export function ListView({ events, onDayClick, onAddEntry, onSaveEvent, onEditEvent, isReadOnly }) {
+export function ListView({ events, onDayClick, onAddEntry, onSaveEvent, onEditEvent, onDeleteEvent, isReadOnly }) {
   const [showArchive, setShowArchive] = useState(false);
 
   const upcomingDays = useMemo(() => buildUpcomingDays(180), []);
@@ -1021,6 +1040,7 @@ export function ListView({ events, onDayClick, onAddEntry, onSaveEvent, onEditEv
                   onAddEntry={onAddEntry}
                   onSaveEvent={onSaveEvent}
                   onEditEvent={onEditEvent}
+                  onDeleteEvent={onDeleteEvent}
                   isReadOnly={isReadOnly}
                 />
               </div>

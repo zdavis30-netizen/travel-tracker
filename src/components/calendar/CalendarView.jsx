@@ -40,6 +40,7 @@ export function CalendarView({ events, onAddEvent, onEditEvent, onDeleteEvent, o
         onAddEntry={handleAddEntry}
         onSaveEvent={onSaveEvent}
         onEditEvent={onEditEvent}
+        onDeleteEvent={onDeleteEvent}
         isReadOnly={isReadOnly}
       />
 
