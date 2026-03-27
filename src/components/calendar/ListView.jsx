@@ -405,19 +405,21 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, isReadOn
         </div>
         <div className="flex-1 h-9 border-l border-gray-50" />
         <div className="flex-1 h-9 border-l border-gray-50" />
-        {/* Travel cell — tappable to open inline form */}
-        <div
-          className={`w-52 flex-shrink-0 border-l border-gray-50 transition-colors ${
-            !isReadOnly ? 'cursor-pointer hover:bg-indigo-50/40' : ''
-          } ${inlineOpen ? 'bg-indigo-50/30 p-2' : 'h-9'}`}
-          onClick={e => { if (!isReadOnly) { e.stopPropagation(); setInlineOpen(true); } }}
-        >
-          {inlineOpen && (
+        {/* Travel cell */}
+        <div className={`w-52 flex-shrink-0 border-l border-gray-50 ${inlineOpen ? 'p-2 bg-indigo-50/30' : 'h-9 flex items-center px-3'}`}>
+          {inlineOpen ? (
             <InlineTravelAdd
               dateStr={dateStr}
               onSave={handleInlineSave}
               onCancel={() => setInlineOpen(false)}
             />
+          ) : (
+            !isReadOnly && (
+              <button
+                onClick={e => { e.stopPropagation(); setInlineOpen(true); }}
+                className="text-xs text-gray-200 hover:text-indigo-400 cursor-pointer transition-colors"
+              >+ flight or hotel</button>
+            )
           )}
         </div>
         {!isReadOnly && (
@@ -464,21 +466,37 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, isReadOn
           <PersonEvents events={arianneEvents} person="arianne" />
         </div>
 
-        {/* Travel — tap to add inline */}
-        <div
-          className={`w-52 flex-shrink-0 border-l border-gray-100 min-h-[56px] transition-colors ${
-            !isReadOnly ? 'cursor-pointer' : ''
-          } ${inlineOpen ? 'bg-indigo-50/30 p-2' : 'px-3 py-3.5 bg-white hover:bg-indigo-50/20'}`}
-          onClick={e => { if (!isReadOnly && !inlineOpen) { e.stopPropagation(); setInlineOpen(true); } }}
-        >
+        {/* Travel column */}
+        <div className="w-52 flex-shrink-0 border-l border-gray-100 min-h-[56px]">
           {inlineOpen ? (
-            <InlineTravelAdd
-              dateStr={dateStr}
-              onSave={handleInlineSave}
-              onCancel={() => setInlineOpen(false)}
-            />
+            <div className="p-2 bg-indigo-50/30">
+              <InlineTravelAdd
+                dateStr={dateStr}
+                onSave={handleInlineSave}
+                onCancel={() => setInlineOpen(false)}
+              />
+            </div>
           ) : (
-            <TravelDetails events={travelEvents} dateStr={dateStr} />
+            <div className="px-3 py-3.5 flex flex-col gap-1">
+              {/* Existing entries — click opens day detail modal */}
+              {travelEvents.length > 0 && (
+                <div
+                  className="cursor-pointer"
+                  onClick={e => { e.stopPropagation(); onDayClick?.(dateStr); }}
+                >
+                  <TravelDetails events={travelEvents} dateStr={dateStr} />
+                </div>
+              )}
+              {/* Add button */}
+              {!isReadOnly && (
+                <button
+                  onClick={e => { e.stopPropagation(); setInlineOpen(true); }}
+                  className={`text-left text-xs text-gray-300 hover:text-indigo-400 cursor-pointer transition-colors ${travelEvents.length > 0 ? 'mt-1' : ''}`}
+                >
+                  {travelEvents.length === 0 ? '+ flight or hotel' : '+ add'}
+                </button>
+              )}
+            </div>
           )}
         </div>
 
