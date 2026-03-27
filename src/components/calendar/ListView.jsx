@@ -927,28 +927,30 @@ export function ListView({ events, onDayClick, onAddEntry, onSaveEvent, onEditEv
       </div>
 
       {/* Calendar table */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-gray-100 shadow-sm bg-white">
         <ColumnHeader isReadOnly={isReadOnly} />
-        {days.map(dateStr => {
-          const month = dateStr.slice(0, 7);
-          const showMonthHeader = month !== lastMonth;
-          lastMonth = month;
+        <div>
+          {days.map(dateStr => {
+            const month = dateStr.slice(0, 7);
+            const showMonthHeader = month !== lastMonth;
+            lastMonth = month;
 
-          return (
-            <div key={dateStr}>
-              {showMonthHeader && <MonthHeader dateStr={dateStr} />}
-              <DayRow
-                dateStr={dateStr}
-                events={events}
-                onDayClick={onDayClick}
-                onAddEntry={onAddEntry}
-                onSaveEvent={onSaveEvent}
-                onEditEvent={onEditEvent}
-                isReadOnly={isReadOnly}
-              />
-            </div>
-          );
-        })}
+            return (
+              <div key={dateStr}>
+                {showMonthHeader && <MonthHeader dateStr={dateStr} />}
+                <DayRow
+                  dateStr={dateStr}
+                  events={events}
+                  onDayClick={onDayClick}
+                  onAddEntry={onAddEntry}
+                  onSaveEvent={onSaveEvent}
+                  onEditEvent={onEditEvent}
+                  isReadOnly={isReadOnly}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
