@@ -15,10 +15,10 @@ const LOOKUP_REASONS = {
   api_error: 'Could not reach flight service — please enter details manually.',
 };
 
-export function FlightForm({ initial, onSave, onCancel }) {
+export function FlightForm({ initial, defaultDate, onSave, onCancel }) {
   const [person, setPerson] = useState(initial?.person || 'zach');
   const [needsBooking, setNeedsBooking] = useState(initial?.needsBooking ?? false);
-  const [date, setDate] = useState(initial?.date || today());
+  const [date, setDate] = useState(initial?.date || defaultDate || today());
   const [flightNumber, setFlightNumber] = useState(initial?.flightNumber || '');
   const [fromCity, setFromCity] = useState(initial?.fromCity || '');
   const [fromCode, setFromCode] = useState(initial?.fromCode || '');

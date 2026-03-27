@@ -6,9 +6,9 @@ function today() {
   return format(new Date(), 'yyyy-MM-dd');
 }
 
-export function TogetherForm({ initial, onSave, onCancel }) {
-  const [dateFrom, setDateFrom] = useState(initial?.dateFrom || today());
-  const [dateTo, setDateTo] = useState(initial?.dateTo || today());
+export function TogetherForm({ initial, defaultDate, onSave, onCancel }) {
+  const [dateFrom, setDateFrom] = useState(initial?.dateFrom || defaultDate || today());
+  const [dateTo, setDateTo] = useState(initial?.dateTo || defaultDate || today());
   const [city, setCity] = useState(initial?.city || '');
 
   function handleSubmit(e) {

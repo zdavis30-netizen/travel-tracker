@@ -12,6 +12,7 @@ function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editEvent, setEditEvent] = useState(null);
+  const [defaultDate, setDefaultDate] = useState(null);
 
   function handleAddEvent(dateStr, editEventOverride) {
     if (editEventOverride) {
@@ -19,6 +20,7 @@ function App() {
     } else {
       setEditEvent(null);
     }
+    setDefaultDate(dateStr || null);
     setModalOpen(true);
   }
 
@@ -82,6 +84,7 @@ function App() {
             onClose={() => setModalOpen(false)}
             onSave={handleSave}
             editEvent={editEvent}
+            defaultDate={defaultDate}
           />
 
           <ImportModal

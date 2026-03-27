@@ -28,7 +28,7 @@ function ToggleButtons({ value, onChange, options }) {
   );
 }
 
-export function LocationForm({ initial, onSave, onCancel }) {
+export function LocationForm({ initial, defaultDate, onSave, onCancel }) {
   const [person, setPerson] = useState(initial?.person || 'zach');
   const initialIsCommon = COMMON_LOCATIONS.includes(initial?.city);
   const [selectedLocation, setSelectedLocation] = useState(
@@ -37,8 +37,8 @@ export function LocationForm({ initial, onSave, onCancel }) {
   const [customCity, setCustomCity] = useState(
     initialIsCommon ? '' : (initial?.city || '')
   );
-  const [dateFrom, setDateFrom] = useState(initial?.dateFrom || today());
-  const [dateTo, setDateTo] = useState(initial?.dateTo || today());
+  const [dateFrom, setDateFrom] = useState(initial?.dateFrom || defaultDate || today());
+  const [dateTo, setDateTo] = useState(initial?.dateTo || defaultDate || today());
   const [hasKids, setHasKids] = useState(initial?.hasKids ?? false);
   const [together, setTogether] = useState(initial?.together ?? false);
 

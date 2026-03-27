@@ -6,8 +6,8 @@ function today() {
   return format(new Date(), 'yyyy-MM-dd');
 }
 
-export function NoteForm({ initial, onSave, onCancel }) {
-  const [date, setDate] = useState(initial?.date || today());
+export function NoteForm({ initial, defaultDate, onSave, onCancel }) {
+  const [date, setDate] = useState(initial?.date || defaultDate || today());
   const [text, setText] = useState(initial?.text || '');
 
   function handleSubmit(e) {

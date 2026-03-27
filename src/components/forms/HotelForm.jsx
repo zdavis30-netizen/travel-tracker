@@ -7,13 +7,13 @@ function today() {
   return format(new Date(), 'yyyy-MM-dd');
 }
 
-export function HotelForm({ initial, onSave, onCancel }) {
+export function HotelForm({ initial, defaultDate, onSave, onCancel }) {
   const [person, setPerson] = useState(initial?.person || 'zach');
   const [needsBooking, setNeedsBooking] = useState(initial?.needsBooking ?? false);
   const [hotelName, setHotelName] = useState(initial?.hotelName || '');
   const [city, setCity] = useState(initial?.city || '');
-  const [dateFrom, setDateFrom] = useState(initial?.dateFrom || today());
-  const [dateTo, setDateTo] = useState(initial?.dateTo || today());
+  const [dateFrom, setDateFrom] = useState(initial?.dateFrom || defaultDate || today());
+  const [dateTo, setDateTo] = useState(initial?.dateTo || defaultDate || today());
 
   function handleSubmit(e) {
     e.preventDefault();
