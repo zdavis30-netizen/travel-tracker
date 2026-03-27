@@ -370,7 +370,7 @@ function InlineTravelAdd({ dateStr, onSave, onCancel }) {
 
 // ── Location label (in person column) ─────────────────────────────────────────
 
-function LocationLabel({ event, person }) {
+function LocationLabel({ event, person, onToggleKids }) {
   const dotColor = person === 'zach' ? 'bg-cyan-400' : 'bg-purple-400';
   return (
     <div className="flex items-start gap-2 flex-wrap">
@@ -378,10 +378,24 @@ function LocationLabel({ event, person }) {
         <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-0.5 ${dotColor}`} />
         <span className="text-sm font-semibold text-gray-800 leading-tight">{event.city}</span>
       </div>
-      {event.hasKids && (
-        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100 leading-tight">
-          👧 Kids
-        </span>
+      {onToggleKids && (
+        event.hasKids ? (
+          <button
+            onClick={e => { e.stopPropagation(); onToggleKids(event); }}
+            title="Tap to remove kids"
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100 leading-tight cursor-pointer hover:bg-amber-100 transition-colors"
+          >
+            👧 Kids
+          </button>
+        ) : (
+          <button
+            onClick={e => { e.stopPropagation(); onToggleKids(event); }}
+            title="Tap to add kids"
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium text-gray-300 border border-dashed border-gray-200 leading-tight cursor-pointer hover:text-amber-500 hover:border-amber-200 transition-colors"
+          >
+            + kids
+          </button>
+        )
       )}
     </div>
   );
@@ -477,13 +491,13 @@ function TravelDetails({ events, dateStr }) {
 
 // ── Person column ──────────────────────────────────────────────────────────────
 
-function PersonEvents({ events, person }) {
+function PersonEvents({ events, person, onToggleKids }) {
   const locationEvents = events.filter(e => e.type === 'location');
   if (locationEvents.length === 0) return null;
   return (
     <div className="flex flex-col gap-1.5">
       {locationEvents.map((ev, i) => (
-        <LocationLabel key={i} event={ev} person={person} />
+        <LocationLabel key={i} event={ev} person={person} onToggleKids={onToggleKids} />
       ))}
     </div>
   );
@@ -637,6 +651,10 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
     setInlineOpen(false);
   }
 
+  function handleToggleKids(locationEvent) {
+    onSaveEvent?.({ ...locationEvent, hasKids: !locationEvent.hasKids });
+  }
+
   const hasContent = zachEvents.length > 0 || arianneEvents.length > 0
     || travelEvents.length > 0 || notes.length > 0 || together;
 
@@ -716,12 +734,12 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
 
         {/* Zach */}
         <div className="flex-1 px-3 py-3.5 border-l border-cyan-100/60 bg-cyan-50/10 min-h-[56px]">
-          <PersonEvents events={zachEvents} person="zach" />
+          <PersonEvents events={zachEvents} person="zach" onToggleKids={isReadOnly ? undefined : handleToggleKids} />
         </div>
 
         {/* Arianne */}
         <div className="flex-1 px-3 py-3.5 border-l border-purple-100/60 bg-purple-50/10 min-h-[56px]">
-          <PersonEvents events={arianneEvents} person="arianne" />
+          <PersonEvents events={arianneEvents} person="arianne" onToggleKids={isReadOnly ? undefined : handleToggleKids} />
         </div>
 
         {/* Travel column */}
