@@ -45,7 +45,7 @@ function CitySummary({ events, upcomingDays }) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-4">
       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
-        Where you'll be · next 4 months
+        Where you'll be · next 6 months
       </p>
       <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
         {summary.map(({ city, zachDays, arianneDays, totalDays }) => {
@@ -403,7 +403,7 @@ function buildPastDays(count = 90) {
 export function ListView({ events, onDayClick, onAddEntry, isReadOnly }) {
   const [showArchive, setShowArchive] = useState(false);
 
-  const upcomingDays = useMemo(() => buildUpcomingDays(120), []);
+  const upcomingDays = useMemo(() => buildUpcomingDays(180), []);
   const pastDays     = useMemo(() => buildPastDays(90),     []);
   const days = showArchive ? pastDays : upcomingDays;
 
@@ -419,7 +419,7 @@ export function ListView({ events, onDayClick, onAddEntry, isReadOnly }) {
       {/* Archive toggle */}
       <div className="flex items-center justify-between px-1">
         <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          {showArchive ? 'Past 90 days' : 'Upcoming 4 months'}
+          {showArchive ? 'Past 90 days' : 'Upcoming 6 months'}
         </span>
         <button
           onClick={() => setShowArchive(v => !v)}
