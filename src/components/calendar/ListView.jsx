@@ -726,10 +726,10 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
         </div>
         <div className="flex-1 h-9 border-l border-gray-50" />
         <div className="flex-1 h-9 border-l border-gray-50" />
-        {/* Plans cell (empty) */}
-        <div className="w-40 flex-shrink-0 h-9 border-l border-gray-50" />
-        {/* Travel cell */}
-        <div className={`w-44 flex-shrink-0 border-l border-gray-50 ${inlineOpen ? 'p-2 bg-indigo-50/30' : 'h-9 flex items-center px-3'}`}>
+        {/* Plans cell (empty, desktop only) */}
+        <div className="hidden md:block w-40 flex-shrink-0 h-9 border-l border-gray-50" />
+        {/* Travel cell (desktop only) */}
+        <div className={`hidden md:flex w-44 flex-shrink-0 border-l border-gray-50 ${inlineOpen ? 'p-2 bg-indigo-50/30' : 'h-9 items-center px-3'}`}>
           {inlineOpen ? (
             <InlineTravelAdd
               dateStr={dateStr}
@@ -789,8 +789,8 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
           <PersonEvents events={arianneEvents} person="arianne" onToggleKids={isReadOnly ? undefined : handleToggleKids} />
         </div>
 
-        {/* Plans column */}
-        <div className="w-40 flex-shrink-0 border-l border-gray-100 min-h-[56px] px-3 py-3.5 flex flex-col gap-1">
+        {/* Plans column — desktop only */}
+        <div className="hidden md:flex w-40 flex-shrink-0 border-l border-gray-100 min-h-[56px] px-3 py-3.5 flex-col gap-1">
           {planEvents.map((plan, i) => (
             <PlanChip key={plan.id || i} plan={plan} onEdit={isReadOnly ? undefined : onEditEvent} />
           ))}
@@ -804,8 +804,8 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
           )}
         </div>
 
-        {/* Travel column */}
-        <div className="w-44 flex-shrink-0 border-l border-gray-100 min-h-[56px] relative">
+        {/* Travel column — desktop only */}
+        <div className="hidden md:block w-44 flex-shrink-0 border-l border-gray-100 min-h-[56px] relative">
           {inlineOpen ? (
             <div className="p-2 bg-indigo-50/30">
               <InlineTravelAdd
@@ -870,6 +870,30 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
         )}
       </div>
 
+      {/* Mobile-only: Plans + Travel strip */}
+      {(planEvents.length > 0 || travelEvents.length > 0) && (
+        <div className="md:hidden border-t border-gray-50 bg-gray-50/40 px-4 py-2 flex flex-wrap gap-x-3 gap-y-1">
+          {planEvents.map((plan, i) => (
+            <button
+              key={plan.id || i}
+              onClick={e => { e.stopPropagation(); if (!isReadOnly) onEditEvent?.(plan); }}
+              className="flex items-center gap-1 text-xs text-indigo-600 font-medium"
+            >
+              <span>{plan.category === 'restaurant' ? '🍽' : plan.category === 'kids' ? '⚽' : plan.category === 'event' ? '🎟' : '📅'}</span>
+              <span>{plan.title}</span>
+              {plan.time && <span className="text-gray-400">· {plan.time}</span>}
+            </button>
+          ))}
+          {travelEvents.map((ev, i) => (
+            <span key={ev.id || i} className="flex items-center gap-1 text-xs text-gray-600">
+              <span>{ev.type === 'flight' ? '✈️' : '🏨'}</span>
+              <span className="font-medium">{ev.type === 'flight' ? ev.flightNumber : (ev.hotelName || ev.city)}</span>
+              {ev.type === 'flight' && ev.departureTime && <span className="text-gray-400">· {ev.departureTime}</span>}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Notes */}
       {notes.length > 0 && (
         <div className="border-t border-amber-100 bg-amber-50/50 px-4 py-2 flex flex-col gap-1">
@@ -909,10 +933,10 @@ function ColumnHeader({ isReadOnly }) {
       <div className="flex-1 px-3 py-2.5 border-l border-purple-100/70">
         <span className="text-sm font-bold text-purple-600">Arianne</span>
       </div>
-      <div className="w-40 flex-shrink-0 px-3 py-2.5 border-l border-gray-100">
+      <div className="hidden md:block w-40 flex-shrink-0 px-3 py-2.5 border-l border-gray-100">
         <span className="text-xs font-semibold text-gray-400 tracking-wide">Plans</span>
       </div>
-      <div className="w-44 flex-shrink-0 px-3 py-2.5 border-l border-gray-100">
+      <div className="hidden md:block w-44 flex-shrink-0 px-3 py-2.5 border-l border-gray-100">
         <span className="text-xs font-semibold text-gray-400 tracking-wide">Travel</span>
       </div>
       {!isReadOnly && <div className="w-8 flex-shrink-0" />}
