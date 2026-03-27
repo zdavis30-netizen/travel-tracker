@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { format, parseISO, addDays, subDays, isWeekend } from 'date-fns';
 import { getEventsForPersonOnDate, getTogetherOnDate, getNotesForDate, getTravelEventsForDate, coversDate } from '../../utils/eventUtils';
 import { isDateToday } from '../../utils/dateUtils';
@@ -110,6 +110,85 @@ function CitySummary({ events, upcomingDays }) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// ── Inline travel quick-add ────────────────────────────────────────────────────
+
+function InlineTravelAdd({ dateStr, onSave, onCancel }) {
+  const [person, setPerson] = useState('zach');
+  const [type,   setType]   = useState('flight');
+  const [value,  setValue]  = useState('');
+  const inputRef = useRef(null);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter') handleSave();
+    if (e.key === 'Escape') onCancel();
+  }
+
+  function handleSave() {
+    if (!value.trim()) { onCancel(); return; }
+    if (type === 'flight') {
+      onSave({ type: 'flight', person, date: dateStr, flightNumber: value.trim(), needsBooking: false });
+    } else {
+      onSave({ type: 'hotel', person, hotelName: value.trim(), city: value.trim(), dateFrom: dateStr, dateTo: dateStr, needsBooking: false });
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2" onClick={e => e.stopPropagation()}>
+      {/* Toggles */}
+      <div className="flex items-center gap-1.5">
+        {/* Person */}
+        <div className="flex rounded-md overflow-hidden border border-gray-200 text-xs">
+          <button
+            onClick={() => setPerson('zach')}
+            className={`px-2 py-1 font-bold transition-colors cursor-pointer ${person === 'zach' ? 'bg-cyan-500 text-white' : 'text-gray-400 hover:bg-gray-50'}`}
+          >Z</button>
+          <button
+            onClick={() => setPerson('arianne')}
+            className={`px-2 py-1 font-bold transition-colors cursor-pointer ${person === 'arianne' ? 'bg-purple-500 text-white' : 'text-gray-400 hover:bg-gray-50'}`}
+          >A</button>
+        </div>
+        {/* Type */}
+        <div className="flex rounded-md overflow-hidden border border-gray-200 text-xs">
+          <button
+            onClick={() => setType('flight')}
+            className={`px-2 py-1 transition-colors cursor-pointer ${type === 'flight' ? 'bg-sky-500 text-white' : 'text-gray-400 hover:bg-gray-50'}`}
+          >✈</button>
+          <button
+            onClick={() => setType('hotel')}
+            className={`px-2 py-1 transition-colors cursor-pointer ${type === 'hotel' ? 'bg-teal-500 text-white' : 'text-gray-400 hover:bg-gray-50'}`}
+          >🏨</button>
+        </div>
+      </div>
+
+      {/* Input */}
+      <div className="flex items-center gap-1">
+        <input
+          ref={inputRef}
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={type === 'flight' ? 'Flight number…' : 'Hotel name…'}
+          className="flex-1 text-xs border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-400 min-w-0"
+        />
+        <button
+          onClick={handleSave}
+          disabled={!value.trim()}
+          className="text-xs px-2 py-1.5 bg-indigo-600 text-white rounded-md disabled:opacity-30 hover:bg-indigo-700 cursor-pointer transition-colors font-medium"
+        >✓</button>
+      </div>
+
+      <button
+        onClick={onCancel}
+        className="text-[10px] text-gray-300 hover:text-gray-500 text-left cursor-pointer transition-colors"
+      >
+        Esc to cancel
+      </button>
     </div>
   );
 }
@@ -237,13 +316,20 @@ function PersonEvents({ events, person }) {
 
 // ── Day row ───────────────────────────────────────────────────────────────────
 
-function DayRow({ dateStr, events, onDayClick, onAddEntry, isReadOnly }) {
+function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, isReadOnly }) {
+  const [inlineOpen, setInlineOpen] = useState(false);
+
   const today         = isDateToday(dateStr);
   const together      = getTogetherOnDate(events, dateStr);
   const zachEvents    = getEventsForPersonOnDate(events, 'zach',    dateStr);
   const arianneEvents = getEventsForPersonOnDate(events, 'arianne', dateStr);
   const travelEvents  = getTravelEventsForDate(events, dateStr);
   const notes         = getNotesForDate(events, dateStr);
+
+  function handleInlineSave(event) {
+    onSaveEvent?.(event);
+    setInlineOpen(false);
+  }
 
   const hasContent = zachEvents.length > 0 || arianneEvents.length > 0
     || travelEvents.length > 0 || notes.length > 0 || together;
@@ -271,7 +357,21 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, isReadOnly }) {
         </div>
         <div className="flex-1 h-9 border-l border-gray-50" />
         <div className="flex-1 h-9 border-l border-gray-50" />
-        <div className="w-52 flex-shrink-0 h-9 border-l border-gray-50" />
+        {/* Travel cell — tappable to open inline form */}
+        <div
+          className={`w-52 flex-shrink-0 border-l border-gray-50 transition-colors ${
+            !isReadOnly ? 'cursor-pointer hover:bg-indigo-50/40' : ''
+          } ${inlineOpen ? 'bg-indigo-50/30 p-2' : 'h-9'}`}
+          onClick={e => { if (!isReadOnly) { e.stopPropagation(); setInlineOpen(true); } }}
+        >
+          {inlineOpen && (
+            <InlineTravelAdd
+              dateStr={dateStr}
+              onSave={handleInlineSave}
+              onCancel={() => setInlineOpen(false)}
+            />
+          )}
+        </div>
         {!isReadOnly && (
           <div className="w-8 flex-shrink-0 flex items-center justify-center border-l border-gray-50">
             <button
@@ -316,9 +416,22 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, isReadOnly }) {
           <PersonEvents events={arianneEvents} person="arianne" />
         </div>
 
-        {/* Travel */}
-        <div className="w-52 flex-shrink-0 px-3 py-3.5 border-l border-gray-100 bg-white min-h-[56px]">
-          <TravelDetails events={travelEvents} dateStr={dateStr} />
+        {/* Travel — tap to add inline */}
+        <div
+          className={`w-52 flex-shrink-0 border-l border-gray-100 min-h-[56px] transition-colors ${
+            !isReadOnly ? 'cursor-pointer' : ''
+          } ${inlineOpen ? 'bg-indigo-50/30 p-2' : 'px-3 py-3.5 bg-white hover:bg-indigo-50/20'}`}
+          onClick={e => { if (!isReadOnly && !inlineOpen) { e.stopPropagation(); setInlineOpen(true); } }}
+        >
+          {inlineOpen ? (
+            <InlineTravelAdd
+              dateStr={dateStr}
+              onSave={handleInlineSave}
+              onCancel={() => setInlineOpen(false)}
+            />
+          ) : (
+            <TravelDetails events={travelEvents} dateStr={dateStr} />
+          )}
         </div>
 
         {/* Add */}
@@ -400,7 +513,7 @@ function buildPastDays(count = 90) {
 
 // ── Main ListView ─────────────────────────────────────────────────────────────
 
-export function ListView({ events, onDayClick, onAddEntry, isReadOnly }) {
+export function ListView({ events, onDayClick, onAddEntry, onSaveEvent, isReadOnly }) {
   const [showArchive, setShowArchive] = useState(false);
 
   const upcomingDays = useMemo(() => buildUpcomingDays(180), []);
@@ -445,6 +558,7 @@ export function ListView({ events, onDayClick, onAddEntry, isReadOnly }) {
                 events={events}
                 onDayClick={onDayClick}
                 onAddEntry={onAddEntry}
+                onSaveEvent={onSaveEvent}
                 isReadOnly={isReadOnly}
               />
             </div>
