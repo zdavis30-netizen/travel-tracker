@@ -134,7 +134,7 @@ function InlineTravelAdd({ dateStr, onSave, onCancel }) {
   useEffect(() => {
     if (type !== 'flight') { setPreview(null); setLookupState(null); return; }
     if (!FLIGHT_RE.test(value.trim())) { setPreview(null); setLookupState(null); return; }
-    if (!getApiKey()) return; // no key — skip silently
+    // Always try — key lives server-side now
 
     setLookupState('loading');
     const timer = setTimeout(async () => {
@@ -229,9 +229,6 @@ function InlineTravelAdd({ dateStr, onSave, onCancel }) {
       )}
       {type === 'flight' && lookupState === 'not_found' && (
         <p className="text-[10px] text-amber-500">Flight not found — will save number only</p>
-      )}
-      {type === 'flight' && !getApiKey() && FLIGHT_RE.test(value.trim()) && (
-        <p className="text-[10px] text-gray-400">Add an API key in Settings to auto-fill route & times</p>
       )}
 
       <button onClick={onCancel} className="text-[10px] text-gray-300 hover:text-gray-500 text-left cursor-pointer transition-colors">
