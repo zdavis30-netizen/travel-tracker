@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
-import { getApiKey, saveApiKey } from '../../services/flightLookup';
 
 export function Header({
   onAddEvent,
@@ -10,12 +8,6 @@ export function Header({
   isReadOnly,
 }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [apiKey, setApiKey] = useState(() => getApiKey() || '');
-
-  function handleSaveKey() {
-    saveApiKey(apiKey.trim());
-    setSettingsOpen(false);
-  }
 
   return (
     <>
@@ -74,34 +66,13 @@ export function Header({
       </header>
 
       <Modal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} title="Settings">
-        <div className="space-y-4">
+        <div className="space-y-3">
           <p className="text-sm text-gray-600">
-            Add a free <span className="font-medium text-gray-800">AviationStack</span> API key to enable automatic flight detail lookup. Without a key, you can still enter flight details manually.
+            Flight times are looked up automatically via AeroDataBox when you enter a flight number.
           </p>
-          <p className="text-xs text-gray-500">
-            Get a free key at aviationstack.com (100 requests/month). The key is stored only in your browser.
+          <p className="text-xs text-gray-400">
+            Travel Tracker · synced live via Firebase
           </p>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">API Key</label>
-            <input
-              type="text"
-              value={apiKey}
-              onChange={e => setApiKey(e.target.value)}
-              placeholder="Your AviationStack API key..."
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div className="flex gap-2 pt-2">
-            <Button onClick={handleSaveKey} className="flex-1">Save Key</Button>
-            {getApiKey() && (
-              <Button
-                variant="secondary"
-                onClick={() => { saveApiKey(''); setApiKey(''); setSettingsOpen(false); }}
-              >
-                Remove Key
-              </Button>
-            )}
-          </div>
         </div>
       </Modal>
     </>
