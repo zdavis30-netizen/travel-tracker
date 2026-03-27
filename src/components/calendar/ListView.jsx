@@ -359,10 +359,101 @@ function PersonEvents({ events, person }) {
   );
 }
 
+// ── Travel event info popover ─────────────────────────────────────────────────
+
+function TravelPopover({ event, dateStr, onEdit, onClose }) {
+  const isFlight = event.type === 'flight';
+  const isHotel  = event.type === 'hotel';
+  const personLabel = event.person === 'zach' ? 'Zach' : 'Arianne';
+  const personColor = event.person === 'zach' ? 'text-cyan-600' : 'text-purple-600';
+
+  return (
+    <div
+      className="absolute z-30 right-0 top-full mt-1 w-64 bg-white rounded-xl shadow-lg border border-gray-200 p-3 flex flex-col gap-2"
+      onClick={e => e.stopPropagation()}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <span className={`text-[10px] font-bold uppercase tracking-wide ${personColor}`}>{personLabel}</span>
+        <button onClick={onClose} className="text-gray-300 hover:text-gray-600 text-base leading-none cursor-pointer transition-colors">×</button>
+      </div>
+
+      {isFlight && (
+        <>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">✈️</span>
+            <div>
+              <p className="text-sm font-bold text-gray-800">{event.flightNumber}</p>
+              {event.fromCity && event.toCity && (
+                <p className="text-xs text-gray-500 leading-tight">
+                  {event.fromCity}{event.fromCode ? ` (${event.fromCode})` : ''} → {event.toCity}{event.toCode ? ` (${event.toCode})` : ''}
+                </p>
+              )}
+            </div>
+          </div>
+          {(event.departureTime || event.arrivalTime) ? (
+            <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2">
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-bold text-gray-800">{event.departureTime || '—'}</span>
+                <span className="text-[10px] text-gray-400">{event.fromCode || 'Dep'}</span>
+              </div>
+              <div className="flex-1 flex flex-col items-center">
+                <div className="w-full h-px bg-gray-300 relative">
+                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-gray-400 text-xs">✈</span>
+                </div>
+              </div>
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-bold text-gray-800">{event.arrivalTime || '—'}</span>
+                <span className="text-[10px] text-gray-400">{event.toCode || 'Arr'}</span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-amber-500 italic">No times on file</p>
+          )}
+          {event.needsBooking && (
+            <span className="self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-600 border border-red-200">
+              ⚠ Needs booking
+            </span>
+          )}
+        </>
+      )}
+
+      {isHotel && (
+        <>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🏨</span>
+            <div>
+              <p className="text-sm font-bold text-gray-800">{event.hotelName || event.city}</p>
+              {event.hotelName && event.city && <p className="text-xs text-gray-500">{event.city}</p>}
+            </div>
+          </div>
+          <div className="bg-gray-50 rounded-lg px-3 py-2 flex flex-col gap-0.5">
+            <p className="text-xs text-gray-600"><span className="font-semibold">Check-in:</span> {event.dateFrom}</p>
+            <p className="text-xs text-gray-600"><span className="font-semibold">Check-out:</span> {event.dateTo}</p>
+          </div>
+          {event.needsBooking && (
+            <span className="self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-600 border border-red-200">
+              ⚠ Needs booking
+            </span>
+          )}
+        </>
+      )}
+
+      <button
+        onClick={() => { onClose(); onEdit(event); }}
+        className="text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer text-left transition-colors"
+      >
+        Edit →
+      </button>
+    </div>
+  );
+}
+
 // ── Day row ───────────────────────────────────────────────────────────────────
 
 function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEvent, isReadOnly }) {
-  const [inlineOpen, setInlineOpen] = useState(false);
+  const [inlineOpen,       setInlineOpen]       = useState(false);
+  const [expandedTravelId, setExpandedTravelId] = useState(null);
 
   const today         = isDateToday(dateStr);
   const together      = getTogetherOnDate(events, dateStr);
@@ -464,7 +555,7 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
         </div>
 
         {/* Travel column */}
-        <div className="w-52 flex-shrink-0 border-l border-gray-100 min-h-[56px]">
+        <div className="w-52 flex-shrink-0 border-l border-gray-100 min-h-[56px] relative">
           {inlineOpen ? (
             <div className="p-2 bg-indigo-50/30">
               <InlineTravelAdd
@@ -475,20 +566,32 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
             </div>
           ) : (
             <div className="px-3 py-3.5 flex flex-col gap-1">
-              {/* Existing entries — tap each one to edit it directly */}
+              {/* Existing entries — tap to see details, with popover */}
               {travelEvents.length > 0 && (
                 <div className="flex flex-col">
-                  {travelEvents.map((ev, i) => (
-                    <div
-                      key={ev.id || i}
-                      className="cursor-pointer rounded hover:bg-indigo-50/40 -mx-1 px-1 transition-colors pb-1.5 mb-1.5 border-b border-gray-100 last:border-b-0 last:pb-0 last:mb-0"
-                      onClick={e => { e.stopPropagation(); onEditEvent?.(ev); }}
-                      title="Tap to edit"
-                    >
-                      {ev.type === 'flight' && <FlightDetail event={ev} />}
-                      {ev.type === 'hotel'  && <HotelDetail  event={ev} dateStr={dateStr} />}
-                    </div>
-                  ))}
+                  {travelEvents.map((ev, i) => {
+                    const evId = ev.id || i;
+                    const isExpanded = expandedTravelId === evId;
+                    return (
+                      <div key={evId} className="relative">
+                        <div
+                          className={`cursor-pointer rounded -mx-1 px-1 transition-colors pb-1.5 mb-1.5 border-b border-gray-100 last:border-b-0 last:pb-0 last:mb-0 ${isExpanded ? 'bg-indigo-50/60' : 'hover:bg-indigo-50/40'}`}
+                          onClick={e => { e.stopPropagation(); setExpandedTravelId(isExpanded ? null : evId); }}
+                        >
+                          {ev.type === 'flight' && <FlightDetail event={ev} />}
+                          {ev.type === 'hotel'  && <HotelDetail  event={ev} dateStr={dateStr} />}
+                        </div>
+                        {isExpanded && (
+                          <TravelPopover
+                            event={ev}
+                            dateStr={dateStr}
+                            onEdit={onEditEvent}
+                            onClose={() => setExpandedTravelId(null)}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
               {/* Add button */}
