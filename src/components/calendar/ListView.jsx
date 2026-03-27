@@ -846,7 +846,7 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
 
 function MonthHeader({ dateStr }) {
   return (
-    <div className="px-4 py-2.5 bg-white sticky top-0 z-10 border-b border-gray-100">
+    <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100">
       <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
         {format(parseISO(dateStr), 'MMMM yyyy')}
       </span>
@@ -858,7 +858,7 @@ function MonthHeader({ dateStr }) {
 
 function ColumnHeader({ isReadOnly }) {
   return (
-    <div className="flex border-b border-gray-100 bg-white sticky top-0 z-20">
+    <div className="flex border-b border-gray-200 bg-white sticky top-[53px] z-20 shadow-sm">
       <div className="w-24 flex-shrink-0 px-4 py-2.5" />
       <div className="flex-1 px-3 py-2.5 border-l border-cyan-100/70">
         <span className="text-sm font-bold text-cyan-600">Zach</span>
