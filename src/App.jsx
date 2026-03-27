@@ -77,6 +77,7 @@ function App() {
       {!isReadOnly && (
         <>
           <EventModal
+            key={editEvent?.id || 'new'}
             isOpen={modalOpen}
             onClose={() => setModalOpen(false)}
             onSave={handleSave}
