@@ -1,82 +1,252 @@
 import { useMemo, useState } from 'react';
 import { format, parseISO, addDays, subDays, isWeekend } from 'date-fns';
-import { getEventsForPersonOnDate, getTogetherOnDate, getNotesForDate } from '../../utils/eventUtils';
+import { getEventsForPersonOnDate, getTogetherOnDate, getNotesForDate, getTravelEventsForDate, coversDate } from '../../utils/eventUtils';
 import { isDateToday } from '../../utils/dateUtils';
 
-// ── Chips ─────────────────────────────────────────────────────────────────────
+// ── City summary helpers ───────────────────────────────────────────────────────
 
-function LocationChip({ event }) {
+function buildCitySummary(events, upcomingDays) {
+  const cityMap = {}; // city -> { zach: Set<dateStr>, arianne: Set<dateStr> }
+
+  events
+    .filter(e => e.type === 'location' && (e.person === 'zach' || e.person === 'arianne'))
+    .forEach(event => {
+      upcomingDays.forEach(dateStr => {
+        if (coversDate(event, dateStr)) {
+          if (!cityMap[event.city]) cityMap[event.city] = { zach: new Set(), arianne: new Set() };
+          cityMap[event.city][event.person].add(dateStr);
+        }
+      });
+    });
+
+  return Object.entries(cityMap)
+    .map(([city, { zach, arianne }]) => ({
+      city,
+      zachDays: zach.size,
+      arianneDays: arianne.size,
+      totalDays: new Set([...zach, ...arianne]).size,
+    }))
+    .filter(s => s.totalDays > 0)
+    .sort((a, b) => b.totalDays - a.totalDays);
+}
+
+// ── City summary infographic ───────────────────────────────────────────────────
+
+function CitySummary({ events, upcomingDays }) {
+  const summary = useMemo(
+    () => buildCitySummary(events, upcomingDays),
+    [events, upcomingDays]
+  );
+
+  if (summary.length === 0) return null;
+
+  const totalUpcoming = upcomingDays.length;
+
   return (
-    <div className="flex flex-wrap items-center gap-1">
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-        <span className="opacity-70">📍</span>
-        <span>{event.city}</span>
-      </span>
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-4">
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
+        Where you'll be · next 4 months
+      </p>
+      <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+        {summary.map(({ city, zachDays, arianneDays, totalDays }) => {
+          const zachPct   = Math.round((zachDays   / totalUpcoming) * 100);
+          const ariannePct = Math.round((arianneDays / totalUpcoming) * 100);
+          const isBoth = zachDays > 0 && arianneDays > 0;
+
+          return (
+            <div
+              key={city}
+              className="flex-shrink-0 min-w-[130px] bg-gray-50/80 border border-gray-100 rounded-xl px-3 py-3"
+            >
+              {/* City name */}
+              <p className="text-sm font-bold text-gray-800 mb-2.5 truncate">{city}</p>
+
+              {/* Two-tone bar */}
+              <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden mb-2.5 flex">
+                {zachDays > 0 && (
+                  <div
+                    className="h-full bg-cyan-400 rounded-l-full"
+                    style={{ width: `${zachPct}%` }}
+                  />
+                )}
+                {arianneDays > 0 && (
+                  <div
+                    className={`h-full bg-purple-400 ${!zachDays ? 'rounded-full' : 'rounded-r-full'}`}
+                    style={{ width: `${ariannePct}%` }}
+                  />
+                )}
+              </div>
+
+              {/* Person breakdown */}
+              <div className="flex flex-col gap-1">
+                {zachDays > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0" />
+                    <span className="text-xs text-gray-500">
+                      <span className="font-semibold text-gray-700">{zachDays}d</span> Zach
+                    </span>
+                  </div>
+                )}
+                {arianneDays > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400 flex-shrink-0" />
+                    <span className="text-xs text-gray-500">
+                      <span className="font-semibold text-gray-700">{arianneDays}d</span> Arianne
+                    </span>
+                  </div>
+                )}
+                {isBoth && (
+                  <div className="flex items-center gap-1.5 mt-0.5 pt-1.5 border-t border-gray-100">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                    <span className="text-xs text-gray-500">
+                      <span className="font-semibold text-gray-700">
+                        {Math.min(zachDays, arianneDays)}d
+                      </span> together
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Location label (in person column) ─────────────────────────────────────────
+
+function LocationLabel({ event, person }) {
+  const dotColor = person === 'zach' ? 'bg-cyan-400' : 'bg-purple-400';
+  return (
+    <div className="flex items-start gap-2 flex-wrap">
+      <div className="flex items-center gap-1.5 min-w-0">
+        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-0.5 ${dotColor}`} />
+        <span className="text-sm font-semibold text-gray-800 leading-tight">{event.city}</span>
+      </div>
       {event.hasKids && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100">
-          <span>👧</span>
-          <span>Kids</span>
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100 leading-tight">
+          👧 Kids
         </span>
       )}
     </div>
   );
 }
 
-function FlightChip({ event }) {
+// ── Travel column chips ────────────────────────────────────────────────────────
+
+const PERSON_COLOR = {
+  zach:    'text-cyan-600',
+  arianne: 'text-purple-600',
+};
+
+function FlightDetail({ event }) {
+  const personLabel = event.person === 'zach' ? 'Zach' : event.person === 'arianne' ? 'Arianne' : null;
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs border ${
-      event.needsBooking
-        ? 'bg-red-50 text-red-700 border-red-200 font-semibold'
-        : 'bg-sky-50 text-sky-700 border-sky-100 font-medium'
-    }`}>
-      {event.needsBooking && <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />}
-      <span>✈</span>
-      <span>{event.flightNumber}</span>
-      {event.fromCity && event.toCity && (
-        <span className="opacity-60">{event.fromCity}→{event.toCity}</span>
+    <div className="flex flex-col gap-0.5 pb-1.5 mb-1.5 border-b border-gray-100 last:border-b-0 last:pb-0 last:mb-0">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {event.needsBooking && (
+          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-50 text-red-600 border border-red-200">
+            <span className="w-1 h-1 rounded-full bg-red-500 inline-block" />
+            Needs booking
+          </span>
+        )}
+        {personLabel && (
+          <span className={`text-[10px] font-bold uppercase tracking-wide ${PERSON_COLOR[event.person]}`}>
+            {personLabel}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span className="text-xs">✈</span>
+        <span className="text-xs font-semibold text-gray-800">{event.flightNumber}</span>
+        {event.fromCity && event.toCity && (
+          <span className="text-xs text-gray-500">{event.fromCity} → {event.toCity}</span>
+        )}
+      </div>
+      {(event.departureTime || event.arrivalTime) && (
+        <p className="text-[10px] text-gray-400 leading-none">
+          {event.departureTime}{event.departureTime && event.arrivalTime ? ' – ' : ''}{event.arrivalTime}
+        </p>
       )}
-    </span>
+    </div>
   );
 }
 
-function HotelChip({ event }) {
+function HotelDetail({ event, dateStr }) {
+  const personLabel = event.person === 'zach' ? 'Zach' : event.person === 'arianne' ? 'Arianne' : null;
+  const isCheckIn  = event.dateFrom === dateStr;
+  const isCheckOut = event.dateTo   === dateStr;
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs border ${
-      event.needsBooking
-        ? 'bg-red-50 text-red-700 border-red-200 font-semibold'
-        : 'bg-teal-50 text-teal-700 border-teal-100 font-medium'
-    }`}>
-      {event.needsBooking && <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />}
-      <span>🏨</span>
-      <span>{event.hotelName || event.city}</span>
-    </span>
+    <div className="flex flex-col gap-0.5 pb-1.5 mb-1.5 border-b border-gray-100 last:border-b-0 last:pb-0 last:mb-0">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {event.needsBooking && (
+          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-50 text-red-600 border border-red-200">
+            <span className="w-1 h-1 rounded-full bg-red-500 inline-block" />
+            Needs booking
+          </span>
+        )}
+        {personLabel && (
+          <span className={`text-[10px] font-bold uppercase tracking-wide ${PERSON_COLOR[event.person]}`}>
+            {personLabel}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span className="text-xs">🏨</span>
+        <span className="text-xs font-semibold text-gray-800">{event.hotelName || event.city}</span>
+        {event.hotelName && <span className="text-xs text-gray-400">{event.city}</span>}
+      </div>
+      <p className="text-[10px] text-gray-400 leading-none">
+        {isCheckIn && isCheckOut
+          ? 'Same-day'
+          : isCheckIn
+          ? `Check-in · out ${event.dateTo}`
+          : `Check-out · in ${event.dateFrom}`}
+      </p>
+    </div>
   );
 }
 
-function PersonEvents({ events }) {
+function TravelDetails({ events, dateStr }) {
   if (events.length === 0) return null;
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col">
       {events.map((ev, i) => {
-        if (ev.type === 'location') return <LocationChip key={i} event={ev} />;
-        if (ev.type === 'flight')   return <FlightChip   key={i} event={ev} />;
-        if (ev.type === 'hotel')    return <HotelChip    key={i} event={ev} />;
+        if (ev.type === 'flight') return <FlightDetail key={i} event={ev} />;
+        if (ev.type === 'hotel')  return <HotelDetail  key={i} event={ev} dateStr={dateStr} />;
         return null;
       })}
     </div>
   );
 }
 
-// ── Day Row ───────────────────────────────────────────────────────────────────
+// ── Person column ──────────────────────────────────────────────────────────────
+
+function PersonEvents({ events, person }) {
+  const locationEvents = events.filter(e => e.type === 'location');
+  if (locationEvents.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1.5">
+      {locationEvents.map((ev, i) => (
+        <LocationLabel key={i} event={ev} person={person} />
+      ))}
+    </div>
+  );
+}
+
+// ── Day row ───────────────────────────────────────────────────────────────────
 
 function DayRow({ dateStr, events, onDayClick, onAddEntry, isReadOnly }) {
-  const today    = isDateToday(dateStr);
-  const together = getTogetherOnDate(events, dateStr);
+  const today         = isDateToday(dateStr);
+  const together      = getTogetherOnDate(events, dateStr);
   const zachEvents    = getEventsForPersonOnDate(events, 'zach',    dateStr);
   const arianneEvents = getEventsForPersonOnDate(events, 'arianne', dateStr);
-  const notes    = getNotesForDate(events, dateStr);
+  const travelEvents  = getTravelEventsForDate(events, dateStr);
+  const notes         = getNotesForDate(events, dateStr);
 
-  const hasContent = zachEvents.length > 0 || arianneEvents.length > 0 || notes.length > 0 || together;
+  const hasContent = zachEvents.length > 0 || arianneEvents.length > 0
+    || travelEvents.length > 0 || notes.length > 0 || together;
 
   const date    = parseISO(dateStr);
   const dayName = format(date, 'EEE');
@@ -84,7 +254,6 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, isReadOnly }) {
   const weekend = isWeekend(date);
 
   if (!hasContent) {
-    // Compact empty row
     return (
       <div
         className={`flex items-center border-b border-gray-50 cursor-pointer transition-colors hover:bg-gray-50/80 ${
@@ -102,6 +271,7 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, isReadOnly }) {
         </div>
         <div className="flex-1 h-9 border-l border-gray-50" />
         <div className="flex-1 h-9 border-l border-gray-50" />
+        <div className="w-52 flex-shrink-0 h-9 border-l border-gray-50" />
         {!isReadOnly && (
           <div className="w-8 flex-shrink-0 flex items-center justify-center border-l border-gray-50">
             <button
@@ -120,40 +290,38 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, isReadOnly }) {
       className={`flex flex-col border-b transition-colors cursor-pointer group ${
         today
           ? 'border-indigo-100 bg-indigo-50/20 border-l-4 border-l-indigo-400'
-          : 'border-gray-100 bg-white hover:bg-gray-50/60'
+          : 'border-gray-100 bg-white hover:bg-gray-50/40'
       }`}
       onClick={() => onDayClick?.(dateStr)}
     >
-      {/* Main row */}
       <div className="flex">
-        {/* Date label */}
-        <div className={`w-24 flex-shrink-0 px-4 py-3 flex flex-col justify-start ${today ? 'bg-indigo-50/30' : ''}`}>
+        {/* Date */}
+        <div className={`w-24 flex-shrink-0 px-4 py-3.5 flex flex-col justify-start ${today ? 'bg-indigo-50/30' : ''}`}>
           <span className={`text-[10px] font-semibold uppercase tracking-widest ${
             today ? 'text-indigo-500' : 'text-gray-400'
-          }`}>
-            {today ? 'Today' : dayName}
-          </span>
+          }`}>{today ? 'Today' : dayName}</span>
           <span className={`text-sm font-bold leading-tight mt-0.5 ${
             today ? 'text-indigo-700' : 'text-gray-800'
-          }`}>
-            {dayNum}
-          </span>
-          {together && (
-            <span className="text-sm mt-1.5" title="Together">💚</span>
-          )}
+          }`}>{dayNum}</span>
+          {together && <span className="text-sm mt-1.5" title="Together">💚</span>}
         </div>
 
         {/* Zach */}
-        <div className="flex-1 px-3 py-3 border-l border-cyan-100/70 bg-cyan-50/10 min-h-[52px]">
-          <PersonEvents events={zachEvents} />
+        <div className="flex-1 px-3 py-3.5 border-l border-cyan-100/60 bg-cyan-50/10 min-h-[56px]">
+          <PersonEvents events={zachEvents} person="zach" />
         </div>
 
         {/* Arianne */}
-        <div className="flex-1 px-3 py-3 border-l border-purple-100/70 bg-purple-50/10 min-h-[52px]">
-          <PersonEvents events={arianneEvents} />
+        <div className="flex-1 px-3 py-3.5 border-l border-purple-100/60 bg-purple-50/10 min-h-[56px]">
+          <PersonEvents events={arianneEvents} person="arianne" />
         </div>
 
-        {/* Add button */}
+        {/* Travel */}
+        <div className="w-52 flex-shrink-0 px-3 py-3.5 border-l border-gray-100 bg-white min-h-[56px]">
+          <TravelDetails events={travelEvents} dateStr={dateStr} />
+        </div>
+
+        {/* Add */}
         {!isReadOnly && (
           <div className="w-8 flex-shrink-0 flex items-center justify-center border-l border-gray-100">
             <button
@@ -165,9 +333,9 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, isReadOnly }) {
         )}
       </div>
 
-      {/* Notes strip */}
+      {/* Notes */}
       {notes.length > 0 && (
-        <div className="border-t border-amber-100 bg-amber-50/60 px-4 py-2 flex flex-col gap-1">
+        <div className="border-t border-amber-100 bg-amber-50/50 px-4 py-2 flex flex-col gap-1">
           {notes.map((note, i) => (
             <div key={note.id || i} className="flex items-start gap-2">
               <span className="text-amber-400 text-xs mt-0.5 flex-shrink-0">📝</span>
@@ -204,12 +372,15 @@ function ColumnHeader({ isReadOnly }) {
       <div className="flex-1 px-3 py-2.5 border-l border-purple-100/70">
         <span className="text-xs font-semibold text-purple-600 tracking-wide">Arianne</span>
       </div>
+      <div className="w-52 flex-shrink-0 px-3 py-2.5 border-l border-gray-100">
+        <span className="text-xs font-semibold text-gray-400 tracking-wide">Travel</span>
+      </div>
       {!isReadOnly && <div className="w-8 flex-shrink-0" />}
     </div>
   );
 }
 
-// ── Day count helpers ─────────────────────────────────────────────────────────
+// ── Day builders ──────────────────────────────────────────────────────────────
 
 function buildUpcomingDays(count = 120) {
   const today = new Date();
@@ -239,7 +410,12 @@ export function ListView({ events, onDayClick, onAddEntry, isReadOnly }) {
   let lastMonth = null;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
+    <div className="max-w-4xl mx-auto px-4 py-4 space-y-3">
+      {/* City summary — only in upcoming mode */}
+      {!showArchive && (
+        <CitySummary events={events} upcomingDays={upcomingDays} />
+      )}
+
       {/* Archive toggle */}
       <div className="flex items-center justify-between px-1">
         <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
@@ -253,6 +429,7 @@ export function ListView({ events, onDayClick, onAddEntry, isReadOnly }) {
         </button>
       </div>
 
+      {/* Calendar table */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <ColumnHeader isReadOnly={isReadOnly} />
         {days.map(dateStr => {

@@ -29,6 +29,17 @@ export function getTogetherOnDate(events, dateStr) {
   return events.some(e => e.type === 'together' && coversDate(e, dateStr));
 }
 
+// Returns flight and hotel events relevant to a date:
+// - Flights whose date matches exactly
+// - Hotels checking in or checking out on that date
+export function getTravelEventsForDate(events, dateStr) {
+  return events.filter(e => {
+    if (e.type === 'flight') return e.date === dateStr;
+    if (e.type === 'hotel')  return e.dateFrom === dateStr || e.dateTo === dateStr;
+    return false;
+  });
+}
+
 // Resolves a display city for a person on a given date, preferring flight destination
 export function resolveDisplayCity(events) {
   const flight = events.find(e => e.type === 'flight');
