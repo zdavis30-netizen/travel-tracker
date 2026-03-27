@@ -361,11 +361,47 @@ function PersonEvents({ events, person }) {
 
 // ── Travel event info popover ─────────────────────────────────────────────────
 
-function TravelPopover({ event, dateStr, onEdit, onClose }) {
+function TravelPopover({ event, dateStr, onEdit, onClose, onSaveEvent }) {
   const isFlight = event.type === 'flight';
   const isHotel  = event.type === 'hotel';
   const personLabel = event.person === 'zach' ? 'Zach' : 'Arianne';
   const personColor = event.person === 'zach' ? 'text-cyan-600' : 'text-purple-600';
+
+  const [flightInfo, setFlightInfo] = useState(null); // fetched times
+  const [fetching,   setFetching]   = useState(false);
+  const [fetchFailed, setFetchFailed] = useState(false);
+
+  // Auto-fetch times when popover opens if flight has no times stored
+  useEffect(() => {
+    if (!isFlight) return;
+    if (event.departureTime || event.arrivalTime) return; // already have times
+    if (!event.flightNumber || !dateStr) return;
+
+    setFetching(true);
+    setFetchFailed(false);
+    lookupFlight(event.flightNumber, dateStr)
+      .then(data => {
+        if (data?.success) {
+          setFlightInfo(data);
+          // Silently save times back to the event so they show up next time
+          if (onSaveEvent && event.id) {
+            onSaveEvent({ ...event, ...data });
+          }
+        } else {
+          setFetchFailed(true);
+        }
+      })
+      .catch(() => setFetchFailed(true))
+      .finally(() => setFetching(false));
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Merge stored times with freshly-fetched times (fetched wins if stored empty)
+  const depTime = event.departureTime || flightInfo?.departureTime;
+  const arrTime = event.arrivalTime   || flightInfo?.arrivalTime;
+  const fromCity = event.fromCity || flightInfo?.fromCity;
+  const toCity   = event.toCity   || flightInfo?.toCity;
+  const fromCode = event.fromCode || flightInfo?.fromCode;
+  const toCode   = event.toCode   || flightInfo?.toCode;
 
   return (
     <div
@@ -384,18 +420,20 @@ function TravelPopover({ event, dateStr, onEdit, onClose }) {
             <span className="text-lg">✈️</span>
             <div>
               <p className="text-sm font-bold text-gray-800">{event.flightNumber}</p>
-              {event.fromCity && event.toCity && (
+              {fromCity && toCity && (
                 <p className="text-xs text-gray-500 leading-tight">
-                  {event.fromCity}{event.fromCode ? ` (${event.fromCode})` : ''} → {event.toCity}{event.toCode ? ` (${event.toCode})` : ''}
+                  {fromCity}{fromCode ? ` (${fromCode})` : ''} → {toCity}{toCode ? ` (${toCode})` : ''}
                 </p>
               )}
             </div>
           </div>
-          {(event.departureTime || event.arrivalTime) ? (
+          {fetching ? (
+            <p className="text-xs text-gray-400 italic animate-pulse">Looking up flight times…</p>
+          ) : (depTime || arrTime) ? (
             <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2">
               <div className="flex flex-col items-center">
-                <span className="text-xs font-bold text-gray-800">{event.departureTime || '—'}</span>
-                <span className="text-[10px] text-gray-400">{event.fromCode || 'Dep'}</span>
+                <span className="text-xs font-bold text-gray-800">{depTime || '—'}</span>
+                <span className="text-[10px] text-gray-400">{fromCode || 'Dep'}</span>
               </div>
               <div className="flex-1 flex flex-col items-center">
                 <div className="w-full h-px bg-gray-300 relative">
@@ -403,12 +441,14 @@ function TravelPopover({ event, dateStr, onEdit, onClose }) {
                 </div>
               </div>
               <div className="flex flex-col items-center">
-                <span className="text-xs font-bold text-gray-800">{event.arrivalTime || '—'}</span>
-                <span className="text-[10px] text-gray-400">{event.toCode || 'Arr'}</span>
+                <span className="text-xs font-bold text-gray-800">{arrTime || '—'}</span>
+                <span className="text-[10px] text-gray-400">{toCode || 'Arr'}</span>
               </div>
             </div>
           ) : (
-            <p className="text-xs text-amber-500 italic">No times on file</p>
+            <p className="text-xs text-amber-500 italic">
+              {fetchFailed ? 'Could not find flight times' : 'No times on file'}
+            </p>
           )}
           {event.needsBooking && (
             <span className="self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-600 border border-red-200">
@@ -587,6 +627,7 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
                             dateStr={dateStr}
                             onEdit={onEditEvent}
                             onClose={() => setExpandedTravelId(null)}
+                            onSaveEvent={onSaveEvent}
                           />
                         )}
                       </div>
