@@ -2,6 +2,7 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { format, parseISO, addDays, subDays, isWeekend } from 'date-fns';
 import { getEventsForPersonOnDate, getTogetherOnDate, getNotesForDate, getTravelEventsForDate, coversDate } from '../../utils/eventUtils';
 import { isDateToday } from '../../utils/dateUtils';
+import { lookupFlight, getApiKey } from '../../services/flightLookup';
 
 // ── City summary helpers ───────────────────────────────────────────────────────
 
@@ -116,13 +117,39 @@ function CitySummary({ events, upcomingDays }) {
 
 // ── Inline travel quick-add ────────────────────────────────────────────────────
 
+// Looks like a complete flight number: 2-3 letter code + 1-4 digits (e.g. UA1234, AA 567)
+const FLIGHT_RE = /^[A-Z]{2,3}\s?\d{1,4}$/i;
+
 function InlineTravelAdd({ dateStr, onSave, onCancel }) {
-  const [person, setPerson] = useState('zach');
-  const [type,   setType]   = useState('flight');
-  const [value,  setValue]  = useState('');
+  const [person,       setPerson]       = useState('zach');
+  const [type,         setType]         = useState('flight');
+  const [value,        setValue]        = useState('');
+  const [lookupState,  setLookupState]  = useState(null); // null | 'loading' | 'found' | 'not_found'
+  const [preview,      setPreview]      = useState(null); // flight detail object from API
   const inputRef = useRef(null);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
+
+  // Auto-lookup when flight number looks complete
+  useEffect(() => {
+    if (type !== 'flight') { setPreview(null); setLookupState(null); return; }
+    if (!FLIGHT_RE.test(value.trim())) { setPreview(null); setLookupState(null); return; }
+    if (!getApiKey()) return; // no key — skip silently
+
+    setLookupState('loading');
+    const timer = setTimeout(async () => {
+      const result = await lookupFlight(value.trim(), dateStr);
+      if (result.success) {
+        setPreview(result);
+        setLookupState('found');
+      } else {
+        setPreview(null);
+        setLookupState('not_found');
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [value, type, dateStr]);
 
   function handleKeyDown(e) {
     if (e.key === 'Enter') handleSave();
@@ -132,7 +159,22 @@ function InlineTravelAdd({ dateStr, onSave, onCancel }) {
   function handleSave() {
     if (!value.trim()) { onCancel(); return; }
     if (type === 'flight') {
-      onSave({ type: 'flight', person, date: dateStr, flightNumber: value.trim(), needsBooking: false });
+      onSave({
+        type: 'flight',
+        person,
+        date: dateStr,
+        flightNumber: value.trim().toUpperCase().replace(/\s/g, ''),
+        needsBooking: false,
+        ...(preview ? {
+          fromCity:      preview.fromCity,
+          fromCode:      preview.fromCode,
+          toCity:        preview.toCity,
+          toCode:        preview.toCode,
+          departureTime: preview.departureTime,
+          arrivalTime:   preview.arrivalTime,
+          autoFilled:    true,
+        } : {}),
+      });
     } else {
       onSave({ type: 'hotel', person, hotelName: value.trim(), city: value.trim(), dateFrom: dateStr, dateTo: dateStr, needsBooking: false });
     }
@@ -140,29 +182,15 @@ function InlineTravelAdd({ dateStr, onSave, onCancel }) {
 
   return (
     <div className="flex flex-col gap-2" onClick={e => e.stopPropagation()}>
-      {/* Toggles */}
+      {/* Person + Type toggles */}
       <div className="flex items-center gap-1.5">
-        {/* Person */}
         <div className="flex rounded-md overflow-hidden border border-gray-200 text-xs">
-          <button
-            onClick={() => setPerson('zach')}
-            className={`px-2 py-1 font-bold transition-colors cursor-pointer ${person === 'zach' ? 'bg-cyan-500 text-white' : 'text-gray-400 hover:bg-gray-50'}`}
-          >Z</button>
-          <button
-            onClick={() => setPerson('arianne')}
-            className={`px-2 py-1 font-bold transition-colors cursor-pointer ${person === 'arianne' ? 'bg-purple-500 text-white' : 'text-gray-400 hover:bg-gray-50'}`}
-          >A</button>
+          <button onClick={() => setPerson('zach')}    className={`px-2 py-1 font-bold transition-colors cursor-pointer ${person === 'zach'    ? 'bg-cyan-500 text-white' : 'text-gray-400 hover:bg-gray-50'}`}>Z</button>
+          <button onClick={() => setPerson('arianne')} className={`px-2 py-1 font-bold transition-colors cursor-pointer ${person === 'arianne' ? 'bg-purple-500 text-white' : 'text-gray-400 hover:bg-gray-50'}`}>A</button>
         </div>
-        {/* Type */}
         <div className="flex rounded-md overflow-hidden border border-gray-200 text-xs">
-          <button
-            onClick={() => setType('flight')}
-            className={`px-2 py-1 transition-colors cursor-pointer ${type === 'flight' ? 'bg-sky-500 text-white' : 'text-gray-400 hover:bg-gray-50'}`}
-          >✈</button>
-          <button
-            onClick={() => setType('hotel')}
-            className={`px-2 py-1 transition-colors cursor-pointer ${type === 'hotel' ? 'bg-teal-500 text-white' : 'text-gray-400 hover:bg-gray-50'}`}
-          >🏨</button>
+          <button onClick={() => { setType('flight'); setPreview(null); setLookupState(null); }} className={`px-2 py-1 transition-colors cursor-pointer ${type === 'flight' ? 'bg-sky-500 text-white' : 'text-gray-400 hover:bg-gray-50'}`}>✈</button>
+          <button onClick={() => { setType('hotel');  setPreview(null); setLookupState(null); }} className={`px-2 py-1 transition-colors cursor-pointer ${type === 'hotel'  ? 'bg-teal-500 text-white' : 'text-gray-400 hover:bg-gray-50'}`}>🏨</button>
         </div>
       </div>
 
@@ -173,7 +201,7 @@ function InlineTravelAdd({ dateStr, onSave, onCancel }) {
           value={value}
           onChange={e => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={type === 'flight' ? 'Flight number…' : 'Hotel name…'}
+          placeholder={type === 'flight' ? 'e.g. UA1234' : 'Hotel name…'}
           className="flex-1 text-xs border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-400 min-w-0"
         />
         <button
@@ -183,10 +211,30 @@ function InlineTravelAdd({ dateStr, onSave, onCancel }) {
         >✓</button>
       </div>
 
-      <button
-        onClick={onCancel}
-        className="text-[10px] text-gray-300 hover:text-gray-500 text-left cursor-pointer transition-colors"
-      >
+      {/* Flight lookup preview */}
+      {type === 'flight' && lookupState === 'loading' && (
+        <p className="text-[10px] text-gray-400 animate-pulse">Looking up flight…</p>
+      )}
+      {type === 'flight' && lookupState === 'found' && preview && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-md px-2 py-1.5 flex flex-col gap-0.5">
+          <p className="text-[10px] font-semibold text-emerald-700">
+            ✓ {preview.fromCode || preview.fromCity} → {preview.toCode || preview.toCity}
+          </p>
+          {(preview.departureTime || preview.arrivalTime) && (
+            <p className="text-[10px] text-emerald-600">
+              {preview.departureTime}{preview.departureTime && preview.arrivalTime ? ' – ' : ''}{preview.arrivalTime}
+            </p>
+          )}
+        </div>
+      )}
+      {type === 'flight' && lookupState === 'not_found' && (
+        <p className="text-[10px] text-amber-500">Flight not found — will save number only</p>
+      )}
+      {type === 'flight' && !getApiKey() && FLIGHT_RE.test(value.trim()) && (
+        <p className="text-[10px] text-gray-400">Add an API key in Settings to auto-fill route & times</p>
+      )}
+
+      <button onClick={onCancel} className="text-[10px] text-gray-300 hover:text-gray-500 text-left cursor-pointer transition-colors">
         Esc to cancel
       </button>
     </div>
