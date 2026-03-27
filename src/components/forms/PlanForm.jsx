@@ -18,7 +18,7 @@ function toggleClass(active) {
   }`;
 }
 
-export function PlanForm({ initial, defaultDate, onSave, onCancel }) {
+export function PlanForm({ initial, defaultDate, onSave, onCancel, onDelete }) {
   const [title,    setTitle]    = useState(initial?.title    || '');
   const [date,     setDate]     = useState(initial?.date     || defaultDate || today());
   const [time,     setTime]     = useState(initial?.time     || '');
@@ -113,6 +113,17 @@ export function PlanForm({ initial, defaultDate, onSave, onCancel }) {
           Cancel
         </button>
       </div>
+
+      {/* Delete — only shown when editing */}
+      {initial && onDelete && (
+        <button
+          type="button"
+          onClick={() => onDelete(initial.id)}
+          className="w-full py-2 text-sm text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer border border-red-100"
+        >
+          Delete Plan
+        </button>
+      )}
     </form>
   );
 }

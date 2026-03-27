@@ -85,6 +85,7 @@ function App() {
             isOpen={modalOpen}
             onClose={() => setModalOpen(false)}
             onSave={handleSave}
+            onDelete={deleteEvent}
             editEvent={editEvent}
             defaultDate={defaultDate}
             defaultType={defaultType}

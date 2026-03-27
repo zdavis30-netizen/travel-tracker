@@ -16,7 +16,7 @@ const TABS = [
   { key: 'note',     label: '📝 Note' },
 ];
 
-export function EventModal({ isOpen, onClose, onSave, editEvent, defaultDate, defaultType }) {
+export function EventModal({ isOpen, onClose, onSave, onDelete, editEvent, defaultDate, defaultType }) {
   const [activeTab, setActiveTab] = useState(editEvent?.type || defaultType || 'location');
 
   const isEdit = !!editEvent;
@@ -31,11 +31,17 @@ export function EventModal({ isOpen, onClose, onSave, editEvent, defaultDate, de
     onClose();
   }
 
+  function handleDelete(id) {
+    onDelete?.(id);
+    onClose();
+  }
+
   const formProps = {
     initial: isEdit ? editEvent : undefined,
     defaultDate: defaultDate || undefined,
     onSave: handleSave,
     onCancel: onClose,
+    onDelete: handleDelete,
   };
 
   return (
