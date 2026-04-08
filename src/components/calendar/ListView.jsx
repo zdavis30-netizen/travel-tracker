@@ -536,7 +536,7 @@ function PersonEvents({ events, person, onToggleKids }) {
 
 // ── Travel event info popover ─────────────────────────────────────────────────
 
-function TravelPopover({ event, dateStr, onEdit, onClose, onSaveEvent }) {
+function TravelPopover({ event, dateStr, onEdit, onClose, onSaveEvent, onDelete }) {
   const isFlight = event.type === 'flight';
   const isHotel  = event.type === 'hotel';
   const personLabel = event.person === 'zach' ? 'Zach' : 'Arianne';
@@ -654,12 +654,22 @@ function TravelPopover({ event, dateStr, onEdit, onClose, onSaveEvent }) {
         </>
       )}
 
-      <button
-        onClick={() => { onClose(); onEdit(event); }}
-        className="text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer text-left transition-colors"
-      >
-        Edit →
-      </button>
+      <div className="flex items-center justify-between pt-1">
+        <button
+          onClick={() => { onClose(); onEdit(event); }}
+          className="text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer transition-colors"
+        >
+          Edit →
+        </button>
+        {onDelete && event.id && (
+          <button
+            onClick={() => { onClose(); onDelete(event.id); }}
+            className="text-xs text-red-400 hover:text-red-600 font-medium cursor-pointer transition-colors"
+          >
+            Delete
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -863,6 +873,7 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
                             onEdit={onEditEvent}
                             onClose={() => setExpandedTravelId(null)}
                             onSaveEvent={onSaveEvent}
+                            onDelete={isReadOnly ? undefined : onDeleteEvent}
                           />
                         )}
                       </div>
