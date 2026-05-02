@@ -3,6 +3,7 @@ import { Header } from './components/layout/Header';
 import { CalendarView } from './components/calendar/CalendarView';
 import { EventModal } from './components/forms/EventModal';
 import { ImportModal } from './components/forms/ImportModal';
+import { BookingsPanel } from './components/layout/BookingsPanel';
 import { useEvents } from './hooks/useEvents';
 
 const isReadOnly = new URLSearchParams(window.location.search).get('mode') === 'view';
@@ -11,6 +12,7 @@ function App() {
   const { events, addEvent, updateEvent, deleteEvent, isLive } = useEvents();
   const [modalOpen, setModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [bookingsOpen, setBookingsOpen] = useState(false);
   const [editEvent, setEditEvent] = useState(null);
   const [defaultDate, setDefaultDate] = useState(null);
   const [defaultType, setDefaultType] = useState(null);
@@ -63,6 +65,7 @@ function App() {
       <Header
         onAddEvent={isReadOnly ? undefined : handleAddEvent}
         onImport={isReadOnly ? undefined : () => setImportOpen(true)}
+        onOpenBookings={() => setBookingsOpen(true)}
         isLive={isLive}
         isReadOnly={isReadOnly}
       />
@@ -77,6 +80,13 @@ function App() {
           isReadOnly={isReadOnly}
         />
       </main>
+
+      <BookingsPanel
+        events={events}
+        isOpen={bookingsOpen}
+        onClose={() => setBookingsOpen(false)}
+        onEditEvent={handleEditEvent}
+      />
 
       {!isReadOnly && (
         <>

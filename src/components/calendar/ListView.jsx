@@ -45,6 +45,7 @@ function buildTogetherStats(events, upcomingDays) {
   const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const byMonth = {};
   let total = 0;
+  let nextTogetherDate = null;
 
   upcomingDays.forEach(dateStr => {
     const zachCities    = new Set(events.filter(e => e.type === 'location' && e.person === 'zach'    && coversDate(e, dateStr)).map(e => e.city));
@@ -53,6 +54,7 @@ function buildTogetherStats(events, upcomingDays) {
     const explicit      = events.some(e => e.type === 'together' && coversDate(e, dateStr));
 
     if (sameCity || explicit) {
+      if (!nextTogetherDate) nextTogetherDate = dateStr;
       total++;
       const [year, mon] = dateStr.split('-');
       const label = `${MONTH_NAMES[parseInt(mon, 10) - 1]}`;
@@ -62,13 +64,13 @@ function buildTogetherStats(events, upcomingDays) {
     }
   });
 
-  return { total, byMonth };
+  return { total, byMonth, nextTogetherDate };
 }
 
 // ── Together stats panel ───────────────────────────────────────────────────────
 
 function TogetherStats({ events, upcomingDays }) {
-  const { total, byMonth } = useMemo(
+  const { total, byMonth, nextTogetherDate } = useMemo(
     () => buildTogetherStats(events, upcomingDays),
     [events, upcomingDays]
   );
@@ -78,16 +80,35 @@ function TogetherStats({ events, upcomingDays }) {
   const months = Object.values(byMonth).filter(m => m.count > 0);
   const maxCount = Math.max(...months.map(m => m.count));
 
+  // Days until next together
+  let daysUntil = null;
+  let nextLabel = null;
+  if (nextTogetherDate) {
+    const todayDate = new Date(); todayDate.setHours(0,0,0,0);
+    const nextDate  = parseISO(nextTogetherDate);
+    const diff = Math.round((nextDate - todayDate) / 86400000);
+    daysUntil = diff;
+    nextLabel = format(nextDate, 'MMM d');
+  }
+
   return (
     <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl px-4 py-4">
       {/* Headline */}
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-1">
         <span className="text-lg">💚</span>
         <div>
           <p className="text-sm font-bold text-emerald-800">
             {total} day{total !== 1 ? 's' : ''} together in the next 6 months
           </p>
-          <p className="text-[11px] text-emerald-600">based on overlapping city stays</p>
+          {daysUntil !== null && (
+            <p className="text-[11px] text-emerald-600 mt-0.5">
+              {daysUntil === 0
+                ? '🎉 You\'re together today!'
+                : daysUntil === 1
+                ? '✨ Together tomorrow!'
+                : `Next together in ${daysUntil} days · ${nextLabel}`}
+            </p>
+          )}
         </div>
       </div>
 
