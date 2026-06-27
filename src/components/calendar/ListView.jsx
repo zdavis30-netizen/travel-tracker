@@ -727,13 +727,18 @@ function GamePopover({ game, onClose }) {
   );
 }
 
-function DayBadges({ holidayName, games, expandedGameIdx, onToggleGame }) {
-  if (!holidayName && !(games && games.length)) return null;
+function DayBadges({ holidayName, games, birthdays, expandedGameIdx, onToggleGame }) {
+  if (!holidayName && !(games && games.length) && !(birthdays && birthdays.length)) return null;
   return (
     <div className="flex flex-col gap-0.5 mt-1">
       {holidayName && (
         <span className="text-[9px] font-semibold text-rose-500 leading-tight">🎉 {holidayName}</span>
       )}
+      {birthdays?.map((b, i) => (
+        <span key={i} className="text-[9px] font-semibold text-pink-500 leading-tight">
+          {b.type === 'anniversary' ? '💍' : '🎂'} {b.name}{b.type === 'birthday' ? "'s Birthday" : ''}
+        </span>
+      ))}
       {games?.map((g, i) => (
         <div key={i} className="relative">
           <button
@@ -751,7 +756,7 @@ function DayBadges({ holidayName, games, expandedGameIdx, onToggleGame }) {
   );
 }
 
-function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEvent, onDeleteEvent, isReadOnly, holidayName, games }) {
+function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEvent, onDeleteEvent, isReadOnly, holidayName, games, birthdays }) {
   const [inlineOpen,       setInlineOpen]       = useState(false);
   const [expandedTravelId, setExpandedTravelId] = useState(null);
   const [expandedGameIdx,  setExpandedGameIdx]  = useState(null);
@@ -805,7 +810,7 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
 
   const hasContent = zachEvents.length > 0 || arianneEvents.length > 0
     || travelEvents.length > 0 || planEvents.length > 0 || notes.length > 0 || together
-    || !!holidayName || (games && games.length > 0);
+    || !!holidayName || (games && games.length > 0) || (birthdays && birthdays.length > 0);
 
   const date    = parseISO(dateStr);
   const dayName = format(date, 'EEE');
@@ -892,6 +897,7 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
           <DayBadges
             holidayName={holidayName}
             games={games}
+            birthdays={birthdays}
             expandedGameIdx={expandedGameIdx}
             onToggleGame={idx => setExpandedGameIdx(prev => (prev === idx ? null : idx))}
           />
@@ -1086,7 +1092,7 @@ function buildPastDays(count = 180) {
 
 export function ListView({ events, onDayClick, onAddEntry, onSaveEvent, onEditEvent, onDeleteEvent, isReadOnly }) {
   const [showArchive, setShowArchive] = useState(false);
-  const { holidays, games } = useExternalEvents();
+  const { holidays, games, birthdays } = useExternalEvents();
 
   const upcomingDays = useMemo(() => buildUpcomingDays(180), []);
   const pastDays     = useMemo(() => buildPastDays(180),    []);
@@ -1140,6 +1146,7 @@ export function ListView({ events, onDayClick, onAddEntry, onSaveEvent, onEditEv
                   isReadOnly={isReadOnly}
                   holidayName={holidays[dateStr]}
                   games={games[dateStr]}
+                  birthdays={birthdays[dateStr]}
                 />
               </div>
             );
