@@ -25,11 +25,13 @@ export async function fetchTeamSchedule(teamKey) {
       return {
         date:         format(localDate, 'yyyy-MM-dd'),
         time:         format(localDate, 'h:mm a'),
+        timeValid:    comp?.timeValid !== false,
         team:         teamKey,
         teamLabel:    team.label,
         opponent:     opp?.team?.displayName    || '',
         opponentAbbr: opp?.team?.abbreviation   || '',
         homeAway:     self?.homeAway            || '',
+        venue:        comp?.venue?.fullName     || '',
         completed:    !!comp?.status?.type?.completed,
       };
     }).filter(Boolean);

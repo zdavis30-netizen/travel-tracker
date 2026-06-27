@@ -698,7 +698,36 @@ function TravelPopover({ event, dateStr, onEdit, onClose, onSaveEvent, onDelete 
 
 // ── Day row ───────────────────────────────────────────────────────────────────
 
-function DayBadges({ holidayName, games }) {
+function GamePopover({ game, onClose }) {
+  return (
+    <div
+      className="absolute z-30 left-0 top-full mt-1 w-56 bg-white rounded-xl shadow-lg border border-gray-200 p-3 flex flex-col gap-2"
+      onClick={e => e.stopPropagation()}
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-bold uppercase tracking-wide text-amber-600">{game.teamLabel}</span>
+        <button onClick={onClose} className="text-gray-300 hover:text-gray-600 text-base leading-none cursor-pointer transition-colors">×</button>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-lg">🏈</span>
+        <p className="text-sm font-bold text-gray-800">
+          {game.teamLabel} {game.homeAway === 'home' ? 'vs' : '@'} {game.opponentAbbr || game.opponent}
+        </p>
+      </div>
+      <div className="bg-gray-50 rounded-lg px-3 py-2 flex flex-col gap-0.5">
+        <p className="text-xs text-gray-600">
+          <span className="font-semibold">Kickoff:</span>{' '}
+          {game.timeValid ? game.time : <span className="text-amber-500 italic">Time TBD</span>}
+        </p>
+        {game.venue && (
+          <p className="text-xs text-gray-600"><span className="font-semibold">Venue:</span> {game.venue}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DayBadges({ holidayName, games, expandedGameIdx, onToggleGame }) {
   if (!holidayName && !(games && games.length)) return null;
   return (
     <div className="flex flex-col gap-0.5 mt-1">
@@ -706,9 +735,17 @@ function DayBadges({ holidayName, games }) {
         <span className="text-[9px] font-semibold text-rose-500 leading-tight">🎉 {holidayName}</span>
       )}
       {games?.map((g, i) => (
-        <span key={i} className="text-[9px] font-semibold text-amber-600 leading-tight">
-          🏈 {g.teamLabel} {g.homeAway === 'home' ? 'vs' : '@'} {g.opponentAbbr}
-        </span>
+        <div key={i} className="relative">
+          <button
+            onClick={e => { e.stopPropagation(); onToggleGame?.(i); }}
+            className="text-[9px] font-semibold text-amber-600 leading-tight cursor-pointer hover:text-amber-700 transition-colors text-left"
+          >
+            🏈 {g.teamLabel} {g.homeAway === 'home' ? 'vs' : '@'} {g.opponentAbbr}
+          </button>
+          {expandedGameIdx === i && (
+            <GamePopover game={g} onClose={() => onToggleGame?.(null)} />
+          )}
+        </div>
       ))}
     </div>
   );
@@ -717,6 +754,7 @@ function DayBadges({ holidayName, games }) {
 function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEvent, onDeleteEvent, isReadOnly, holidayName, games }) {
   const [inlineOpen,       setInlineOpen]       = useState(false);
   const [expandedTravelId, setExpandedTravelId] = useState(null);
+  const [expandedGameIdx,  setExpandedGameIdx]  = useState(null);
 
   const today         = isDateToday(dateStr);
   const together      = getTogetherOnDate(events, dateStr);
@@ -851,7 +889,12 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
           ) : (
             together && <span className="text-sm mt-1.5">💚</span>
           )}
-          <DayBadges holidayName={holidayName} games={games} />
+          <DayBadges
+            holidayName={holidayName}
+            games={games}
+            expandedGameIdx={expandedGameIdx}
+            onToggleGame={idx => setExpandedGameIdx(prev => (prev === idx ? null : idx))}
+          />
         </div>
 
         {/* Zach */}
