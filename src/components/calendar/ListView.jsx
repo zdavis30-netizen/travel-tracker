@@ -4,6 +4,7 @@ import { getEventsForPersonOnDate, getTogetherOnDate, getNotesForDate, getTravel
 import { PLAN_CATEGORIES } from '../forms/PlanForm';
 import { isDateToday } from '../../utils/dateUtils';
 import { lookupFlight, getApiKey } from '../../services/flightLookup';
+import { useExternalEvents } from '../../hooks/useExternalEvents';
 
 // ── Weather helpers (Open-Meteo — free, no key needed) ────────────────────────
 
@@ -697,7 +698,23 @@ function TravelPopover({ event, dateStr, onEdit, onClose, onSaveEvent, onDelete 
 
 // ── Day row ───────────────────────────────────────────────────────────────────
 
-function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEvent, onDeleteEvent, isReadOnly }) {
+function DayBadges({ holidayName, games }) {
+  if (!holidayName && !(games && games.length)) return null;
+  return (
+    <div className="flex flex-col gap-0.5 mt-1">
+      {holidayName && (
+        <span className="text-[9px] font-semibold text-rose-500 leading-tight">🎉 {holidayName}</span>
+      )}
+      {games?.map((g, i) => (
+        <span key={i} className="text-[9px] font-semibold text-amber-600 leading-tight">
+          🏈 {g.teamLabel} {g.homeAway === 'home' ? 'vs' : '@'} {g.opponentAbbr}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEvent, onDeleteEvent, isReadOnly, holidayName, games }) {
   const [inlineOpen,       setInlineOpen]       = useState(false);
   const [expandedTravelId, setExpandedTravelId] = useState(null);
 
@@ -749,7 +766,8 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
   }
 
   const hasContent = zachEvents.length > 0 || arianneEvents.length > 0
-    || travelEvents.length > 0 || planEvents.length > 0 || notes.length > 0 || together;
+    || travelEvents.length > 0 || planEvents.length > 0 || notes.length > 0 || together
+    || !!holidayName || (games && games.length > 0);
 
   const date    = parseISO(dateStr);
   const dayName = format(date, 'EEE');
@@ -833,6 +851,7 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
           ) : (
             together && <span className="text-sm mt-1.5">💚</span>
           )}
+          <DayBadges holidayName={holidayName} games={games} />
         </div>
 
         {/* Zach */}
@@ -1024,6 +1043,7 @@ function buildPastDays(count = 180) {
 
 export function ListView({ events, onDayClick, onAddEntry, onSaveEvent, onEditEvent, onDeleteEvent, isReadOnly }) {
   const [showArchive, setShowArchive] = useState(false);
+  const { holidays, games } = useExternalEvents();
 
   const upcomingDays = useMemo(() => buildUpcomingDays(180), []);
   const pastDays     = useMemo(() => buildPastDays(180),    []);
@@ -1075,6 +1095,8 @@ export function ListView({ events, onDayClick, onAddEntry, onSaveEvent, onEditEv
                   onEditEvent={onEditEvent}
                   onDeleteEvent={onDeleteEvent}
                   isReadOnly={isReadOnly}
+                  holidayName={holidays[dateStr]}
+                  games={games[dateStr]}
                 />
               </div>
             );
