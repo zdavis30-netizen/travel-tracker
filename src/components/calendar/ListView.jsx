@@ -5,6 +5,7 @@ import { PLAN_CATEGORIES } from '../forms/PlanForm';
 import { isDateToday } from '../../utils/dateUtils';
 import { lookupFlight, getApiKey } from '../../services/flightLookup';
 import { useExternalEvents } from '../../hooks/useExternalEvents';
+import { LOCATIONS, getLocationMeta } from '../../services/locations';
 
 // ── Weather helpers (Open-Meteo — free, no key needed) ────────────────────────
 
@@ -391,40 +392,172 @@ function InlineTravelAdd({ dateStr, onSave, onCancel }) {
   );
 }
 
+// ── Quick-add popover (person + location + date range + kids) ─────────────────
+
+function QuickAdd({ dateStr, onSave, onCancel }) {
+  const [person,     setPerson]     = useState('both');
+  const [cityId,     setCityId]     = useState('');
+  const [customCity, setCustomCity] = useState('');
+  const [dateTo,     setDateTo]     = useState(dateStr);
+  const [hasKids,    setHasKids]    = useState(false);
+
+  const finalCity =
+    cityId === 'custom'
+      ? customCity.trim()
+      : LOCATIONS.find(l => l.id === cityId)?.label ?? '';
+
+  function handleSave() {
+    if (!finalCity) return;
+    const base = { type: 'location', city: finalCity, dateFrom: dateStr, dateTo };
+    if (person === 'zach'    || person === 'both') onSave({ ...base, person: 'zach',    hasKids });
+    if (person === 'arianne' || person === 'both') onSave({ ...base, person: 'arianne', hasKids: false });
+    onCancel();
+  }
+
+  return (
+    <div className="flex flex-col gap-3" onClick={e => e.stopPropagation()}>
+      {/* Who */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest w-12">Who</span>
+        <div className="flex gap-1">
+          {[
+            { id: 'zach',    label: 'Zach',    active: 'bg-cyan-500 text-white' },
+            { id: 'arianne', label: 'Arianne', active: 'bg-purple-500 text-white' },
+            { id: 'both',    label: 'Both',    active: 'bg-emerald-500 text-white' },
+          ].map(p => (
+            <button
+              key={p.id}
+              onClick={() => setPerson(p.id)}
+              className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+                person === p.id ? p.active : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              }`}
+            >{p.label}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Where */}
+      <div>
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Where</span>
+        <div className="flex flex-wrap gap-1.5 mt-1.5">
+          {LOCATIONS.map(loc => (
+            <button
+              key={loc.id}
+              onClick={() => setCityId(loc.id)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border"
+              style={cityId === loc.id
+                ? { backgroundColor: loc.bg, borderColor: loc.border, color: loc.text }
+                : { backgroundColor: 'white', borderColor: '#e5e7eb', color: '#6b7280' }}
+            >{loc.label}</button>
+          ))}
+          <button
+            onClick={() => setCityId('custom')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+              cityId === 'custom'
+                ? 'bg-gray-100 border-gray-400 text-gray-700'
+                : 'bg-white border-dashed border-gray-300 text-gray-400 hover:border-gray-400'
+            }`}
+          >+ Other</button>
+        </div>
+      </div>
+
+      {/* Custom city input */}
+      {cityId === 'custom' && (
+        <input
+          autoFocus
+          value={customCity}
+          onChange={e => setCustomCity(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') onCancel(); }}
+          placeholder="City or place name…"
+          className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-400 max-w-[200px]"
+        />
+      )}
+
+      {/* Through date */}
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest w-12">Through</span>
+        <input
+          type="date"
+          value={dateTo}
+          min={dateStr}
+          onChange={e => setDateTo(e.target.value)}
+          className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        />
+      </div>
+
+      {/* Kids */}
+      {(person === 'zach' || person === 'both') && (
+        <button
+          onClick={() => setHasKids(v => !v)}
+          className={`self-start flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+            hasKids
+              ? 'bg-amber-50 border-amber-200 text-amber-700'
+              : 'bg-white border-gray-200 text-gray-400 hover:border-amber-200 hover:text-amber-500'
+          }`}
+        >👧 Kids</button>
+      )}
+
+      {/* Actions */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleSave}
+          disabled={!finalCity}
+          className="px-4 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg disabled:opacity-30 hover:bg-indigo-700 cursor-pointer transition-colors"
+        >Add</button>
+        <button onClick={onCancel} className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer transition-colors">
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Location label (in person column) ─────────────────────────────────────────
 
-function LocationLabel({ event, person, onToggleKids }) {
-  const dotColor = person === 'zach' ? 'bg-cyan-400' : 'bg-purple-400';
+function LocationLabel({ event, person, dateStr, onToggleKids, onDragStart }) {
+  const locMeta  = getLocationMeta(event.city);
+  const dotColor = locMeta ? locMeta.color : (person === 'zach' ? '#22d3ee' : '#c084fc');
+  const isLastDay = event.dateTo === dateStr; // show drag handle on last day of event
+
   return (
-    <div className="flex items-start gap-2 flex-wrap">
-      <div className="flex items-center gap-1.5 min-w-0">
-        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-0.5 ${dotColor}`} />
-        <span className="text-sm font-semibold text-gray-800 leading-tight">{event.city}</span>
-      </div>
-      {event.hasKids ? (
-        onToggleKids ? (
-          <button
-            onClick={e => { e.stopPropagation(); onToggleKids(event); }}
-            title="Tap to remove kids"
-            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100 leading-tight cursor-pointer hover:bg-amber-100 transition-colors"
-          >
-            👧 Kids
-          </button>
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-start gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span
+            className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-0.5"
+            style={{ backgroundColor: dotColor }}
+          />
+          <span className="text-sm font-semibold text-gray-800 leading-tight">{event.city}</span>
+        </div>
+        {event.hasKids ? (
+          onToggleKids ? (
+            <button
+              onClick={e => { e.stopPropagation(); onToggleKids(event); }}
+              title="Tap to remove kids"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100 leading-tight cursor-pointer hover:bg-amber-100 transition-colors"
+            >👧 Kids</button>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100 leading-tight">
+              👧 Kids
+            </span>
+          )
         ) : (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100 leading-tight">
-            👧 Kids
-          </span>
-        )
-      ) : (
-        onToggleKids && (
-          <button
-            onClick={e => { e.stopPropagation(); onToggleKids(event); }}
-            title="Tap to add kids"
-            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium text-gray-300 border border-dashed border-gray-200 leading-tight cursor-pointer hover:text-amber-500 hover:border-amber-200 transition-colors"
-          >
-            + kids
-          </button>
-        )
+          onToggleKids && (
+            <button
+              onClick={e => { e.stopPropagation(); onToggleKids(event); }}
+              title="Tap to add kids"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium text-gray-300 border border-dashed border-gray-200 leading-tight cursor-pointer hover:text-amber-500 hover:border-amber-200 transition-colors"
+            >+ kids</button>
+          )
+        )}
+      </div>
+      {/* Drag handle — desktop only, last day of event */}
+      {onDragStart && isLastDay && (
+        <div
+          className="hidden md:block h-1 w-8 rounded-full bg-gray-200 hover:bg-indigo-400 mx-auto mt-1 cursor-ns-resize transition-colors"
+          onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onDragStart(event); }}
+          title="Drag to change end date"
+        />
       )}
     </div>
   );
@@ -544,13 +677,20 @@ function TravelDetails({ events, dateStr }) {
 
 // ── Person column ──────────────────────────────────────────────────────────────
 
-function PersonEvents({ events, person, onToggleKids }) {
+function PersonEvents({ events, person, dateStr, onToggleKids, onDragStart }) {
   const locationEvents = events.filter(e => e.type === 'location');
   if (locationEvents.length === 0) return null;
   return (
     <div className="flex flex-col gap-1.5">
       {locationEvents.map((ev, i) => (
-        <LocationLabel key={i} event={ev} person={person} onToggleKids={onToggleKids} />
+        <LocationLabel
+          key={i}
+          event={ev}
+          person={person}
+          dateStr={dateStr}
+          onToggleKids={onToggleKids}
+          onDragStart={onDragStart}
+        />
       ))}
     </div>
   );
@@ -757,9 +897,12 @@ function DayBadges({ holidayName, games, birthdays, expandedGameIdx, onToggleGam
 }
 
 function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEvent, onDeleteEvent, isReadOnly, holidayName, games, birthdays }) {
+  const [quickAddOpen,     setQuickAddOpen]     = useState(false);
   const [inlineOpen,       setInlineOpen]       = useState(false);
   const [expandedTravelId, setExpandedTravelId] = useState(null);
   const [expandedGameIdx,  setExpandedGameIdx]  = useState(null);
+  const dragRef = useRef(null);
+  const [dragTooltip, setDragTooltip] = useState(null); // { x, y, date }
 
   const today         = isDateToday(dateStr);
   const together      = getTogetherOnDate(events, dateStr);
@@ -769,6 +912,17 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
   const planEvents    = getPlansForDate(events, dateStr);
   const notes         = getNotesForDate(events, dateStr);
 
+  // Location color metadata for person cells
+  const zachLocMeta = getLocationMeta(zachEvents.find(e => e.type === 'location')?.city);
+  const arLocMeta   = getLocationMeta(arianneEvents.find(e => e.type === 'location')?.city);
+
+  const zachCellStyle = zachLocMeta
+    ? { backgroundColor: zachLocMeta.bg, borderLeftColor: zachLocMeta.border }
+    : {};
+  const arCellStyle = arLocMeta
+    ? { backgroundColor: arLocMeta.bg, borderLeftColor: arLocMeta.border }
+    : {};
+
   function handleInlineSave(event) {
     onSaveEvent?.(event);
     setInlineOpen(false);
@@ -776,36 +930,54 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
 
   function handleToggleTogether() {
     if (together) {
-      // Delete the existing together event
       const ev = events.find(e => e.type === 'together' && coversDate(e, dateStr));
       if (ev?.id) onDeleteEvent?.(ev.id);
     } else {
-      // Create a single-day together event
       onSaveEvent?.({ type: 'together', dateFrom: dateStr, dateTo: dateStr });
     }
   }
 
   function handleToggleKids(locationEvent) {
     const { dateFrom, dateTo, hasKids } = locationEvent;
-
-    // Single-day event OR tapping the first day of the range → toggle whole event
     if (dateFrom === dateTo || dateStr === dateFrom) {
       onSaveEvent?.({ ...locationEvent, hasKids: !hasKids });
       return;
     }
-
-    // Multi-day event, tapping a date after the start → split at dateStr:
-    //   Segment A: dateFrom → (dateStr - 1), keeps original hasKids
-    //   Segment B: dateStr  → dateTo,        gets toggled hasKids
     const dayBefore = format(subDays(parseISO(dateStr), 1), 'yyyy-MM-dd');
-
-    // Shorten the original event to end the day before the tap
     onSaveEvent?.({ ...locationEvent, dateTo: dayBefore });
-
-    // Create a new event from the tapped date forward with toggled kids
-    // Omit id/fbId so handleSave treats it as a new event
     const { id: _id, fbId: _fbId, ...rest } = locationEvent;
     onSaveEvent?.({ ...rest, dateFrom: dateStr, dateTo, hasKids: !hasKids });
+  }
+
+  // ── Drag-to-resize ─────────────────────────────────────────────────────────
+  function handleDragStart(locationEvent) {
+    dragRef.current = { event: locationEvent, newDateTo: locationEvent.dateTo };
+
+    function onMouseMove(e) {
+      const els = document.elementsFromPoint(e.clientX, e.clientY);
+      const rowEl = els.find(el => el.getAttribute && el.getAttribute('data-date'));
+      if (rowEl) {
+        const hovDate = rowEl.getAttribute('data-date');
+        if (hovDate >= locationEvent.dateFrom) {
+          dragRef.current.newDateTo = hovDate;
+          setDragTooltip({ x: e.clientX, y: e.clientY, date: hovDate });
+        }
+      }
+    }
+
+    function onMouseUp() {
+      const ref = dragRef.current;
+      if (ref && ref.newDateTo !== ref.event.dateTo) {
+        onSaveEvent?.({ ...ref.event, dateTo: ref.newDateTo });
+      }
+      dragRef.current = null;
+      setDragTooltip(null);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    }
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
   }
 
   const hasContent = zachEvents.length > 0 || arianneEvents.length > 0
@@ -817,64 +989,78 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
   const dayNum  = format(date, 'MMM d');
   const weekend = isWeekend(date);
 
+  // ── Empty row ──────────────────────────────────────────────────────────────
   if (!hasContent) {
     return (
       <div
-        className={`flex items-center border-b border-gray-50 cursor-pointer transition-colors hover:bg-gray-50/80 ${
+        data-date={dateStr}
+        className={`flex flex-col border-b border-gray-50 cursor-pointer transition-colors hover:bg-gray-50/80 ${
           today ? 'border-l-4 border-l-indigo-400 bg-indigo-50/20' : weekend ? 'bg-gray-50/30' : 'bg-white'
         }`}
-        onClick={() => onDayClick?.(dateStr)}
+        onClick={() => { if (!isReadOnly && !quickAddOpen) setQuickAddOpen(true); }}
       >
-        <div className={`w-24 flex-shrink-0 px-4 py-2 flex flex-col justify-center ${today ? 'bg-indigo-50/30' : ''}`}>
-          <span className={`text-[10px] font-semibold uppercase tracking-widest leading-none ${
-            today ? 'text-indigo-500' : weekend ? 'text-gray-400' : 'text-gray-300'
-          }`}>{today ? 'Today' : dayName}</span>
-          <span className={`text-xs font-bold mt-0.5 ${
-            today ? 'text-indigo-700' : weekend ? 'text-gray-500' : 'text-gray-300'
-          }`}>{dayNum}</span>
-        </div>
-        <div className="flex-1 h-9 border-l border-gray-50" />
-        <div className="flex-1 h-9 border-l border-gray-50" />
-        {/* Plans cell (empty, desktop only) */}
-        <div className="hidden md:block w-40 flex-shrink-0 h-9 border-l border-gray-50" />
-        {/* Travel cell (desktop only) */}
-        <div className={`hidden md:flex w-44 flex-shrink-0 border-l border-gray-50 ${inlineOpen ? 'p-2 bg-indigo-50/30' : 'h-9 items-center px-3'}`}>
-          {inlineOpen ? (
-            <InlineTravelAdd
-              dateStr={dateStr}
-              onSave={handleInlineSave}
-              onCancel={() => setInlineOpen(false)}
-            />
-          ) : (
-            !isReadOnly && (
+        <div className="flex">
+          <div className={`w-24 flex-shrink-0 px-4 py-2 flex flex-col justify-center ${today ? 'bg-indigo-50/30' : ''}`}>
+            <span className={`text-[10px] font-semibold uppercase tracking-widest leading-none ${
+              today ? 'text-indigo-500' : weekend ? 'text-gray-400' : 'text-gray-300'
+            }`}>{today ? 'Today' : dayName}</span>
+            <span className={`text-xs font-bold mt-0.5 ${
+              today ? 'text-indigo-700' : weekend ? 'text-gray-500' : 'text-gray-300'
+            }`}>{dayNum}</span>
+          </div>
+          <div className="flex-1 h-9 border-l border-gray-50" />
+          <div className="flex-1 h-9 border-l border-gray-50" />
+          <div className="hidden md:block w-40 flex-shrink-0 h-9 border-l border-gray-50" />
+          <div className={`hidden md:flex w-44 flex-shrink-0 border-l border-gray-50 ${inlineOpen ? 'p-2 bg-indigo-50/30' : 'h-9 items-center px-3'}`}>
+            {inlineOpen ? (
+              <InlineTravelAdd
+                dateStr={dateStr}
+                onSave={handleInlineSave}
+                onCancel={() => setInlineOpen(false)}
+              />
+            ) : (
+              !isReadOnly && (
+                <button
+                  onClick={e => { e.stopPropagation(); setInlineOpen(true); }}
+                  className="text-xs text-gray-200 hover:text-indigo-400 cursor-pointer transition-colors"
+                >+ flight or hotel</button>
+              )
+            )}
+          </div>
+          {!isReadOnly && (
+            <div className="w-8 flex-shrink-0 flex items-center justify-center border-l border-gray-50">
               <button
-                onClick={e => { e.stopPropagation(); setInlineOpen(true); }}
-                className="text-xs text-gray-200 hover:text-indigo-400 cursor-pointer transition-colors"
-              >+ flight or hotel</button>
-            )
+                onClick={e => { e.stopPropagation(); onAddEntry?.(dateStr); }}
+                className="opacity-0 hover:opacity-100 text-gray-300 hover:text-indigo-400 text-lg leading-none cursor-pointer transition-all"
+                title="Add event"
+              >+</button>
+            </div>
           )}
         </div>
-        {!isReadOnly && (
-          <div className="w-8 flex-shrink-0 flex items-center justify-center border-l border-gray-50">
-            <button
-              onClick={e => { e.stopPropagation(); onAddEntry?.(dateStr); }}
-              className="opacity-0 hover:opacity-100 text-gray-300 hover:text-indigo-400 text-lg leading-none cursor-pointer transition-all"
-              title="Add event"
-            >+</button>
+        {/* Quick-add panel */}
+        {quickAddOpen && !isReadOnly && (
+          <div className="border-t border-indigo-100 bg-indigo-50/20 px-4 py-3" onClick={e => e.stopPropagation()}>
+            <QuickAdd
+              dateStr={dateStr}
+              onSave={ev => onSaveEvent?.(ev)}
+              onCancel={() => setQuickAddOpen(false)}
+            />
           </div>
         )}
       </div>
     );
   }
 
+  // ── Content row ────────────────────────────────────────────────────────────
   return (
     <div
+      data-date={dateStr}
       className={`flex flex-col border-b transition-colors cursor-pointer group ${
         today
           ? 'border-indigo-100 bg-indigo-50/20 border-l-4 border-l-indigo-400'
           : 'border-gray-100 bg-white hover:bg-gray-50/40'
       }`}
-      onClick={() => onDayClick?.(dateStr)}
+      onClick={() => { if (!isReadOnly && !quickAddOpen) setQuickAddOpen(true); }}
     >
       <div className="flex">
         {/* Date */}
@@ -904,13 +1090,31 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
         </div>
 
         {/* Zach */}
-        <div className="flex-1 px-3 py-3.5 border-l border-cyan-100/60 bg-cyan-50/10 min-h-[56px]">
-          <PersonEvents events={zachEvents} person="zach" onToggleKids={isReadOnly ? undefined : handleToggleKids} />
+        <div
+          className={`flex-1 px-3 py-3.5 border-l min-h-[56px] ${zachLocMeta ? '' : 'border-cyan-100/60 bg-cyan-50/10'}`}
+          style={zachCellStyle}
+        >
+          <PersonEvents
+            events={zachEvents}
+            person="zach"
+            dateStr={dateStr}
+            onToggleKids={isReadOnly ? undefined : handleToggleKids}
+            onDragStart={isReadOnly ? undefined : handleDragStart}
+          />
         </div>
 
         {/* Arianne */}
-        <div className="flex-1 px-3 py-3.5 border-l border-purple-100/60 bg-purple-50/10 min-h-[56px]">
-          <PersonEvents events={arianneEvents} person="arianne" onToggleKids={isReadOnly ? undefined : handleToggleKids} />
+        <div
+          className={`flex-1 px-3 py-3.5 border-l min-h-[56px] ${arLocMeta ? '' : 'border-purple-100/60 bg-purple-50/10'}`}
+          style={arCellStyle}
+        >
+          <PersonEvents
+            events={arianneEvents}
+            person="arianne"
+            dateStr={dateStr}
+            onToggleKids={isReadOnly ? undefined : handleToggleKids}
+            onDragStart={isReadOnly ? undefined : handleDragStart}
+          />
         </div>
 
         {/* Plans column — desktop only */}
@@ -940,7 +1144,6 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
             </div>
           ) : (
             <div className="px-3 py-3.5 flex flex-col gap-1">
-              {/* Existing entries — tap to see details, with popover */}
               {travelEvents.length > 0 && (
                 <div className="flex flex-col">
                   {travelEvents.map((ev, i) => {
@@ -970,7 +1173,6 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
                   })}
                 </div>
               )}
-              {/* Add button */}
               {!isReadOnly && (
                 <button
                   onClick={e => { e.stopPropagation(); setInlineOpen(true); }}
@@ -994,6 +1196,17 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
           </div>
         )}
       </div>
+
+      {/* Quick-add panel */}
+      {quickAddOpen && !isReadOnly && (
+        <div className="border-t border-indigo-100 bg-indigo-50/20 px-4 py-3" onClick={e => e.stopPropagation()}>
+          <QuickAdd
+            dateStr={dateStr}
+            onSave={ev => onSaveEvent?.(ev)}
+            onCancel={() => setQuickAddOpen(false)}
+          />
+        </div>
+      )}
 
       {/* Mobile-only: Plans + Travel strip */}
       {(planEvents.length > 0 || travelEvents.length > 0) && (
@@ -1028,6 +1241,16 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
               <p className="text-xs text-gray-600 leading-snug">{note.text}</p>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Drag tooltip — fixed so it floats above all content */}
+      {dragTooltip && (
+        <div
+          className="pointer-events-none fixed z-50 bg-gray-800 text-white text-xs rounded-lg px-2.5 py-1.5 shadow-lg"
+          style={{ left: dragTooltip.x + 14, top: dragTooltip.y - 12 }}
+        >
+          → {format(parseISO(dragTooltip.date), 'MMM d')}
         </div>
       )}
     </div>
