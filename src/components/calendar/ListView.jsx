@@ -997,7 +997,7 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
         className={`flex flex-col border-b border-gray-50 cursor-pointer transition-colors hover:bg-gray-50/80 ${
           today ? 'border-l-4 border-l-indigo-400 bg-indigo-50/20' : weekend ? 'bg-gray-50/30' : 'bg-white'
         }`}
-        onClick={() => { if (!isReadOnly && !quickAddOpen) setQuickAddOpen(true); }}
+        onClick={() => { if (!isReadOnly) setQuickAddOpen(v => !v); }}
       >
         <div className="flex">
           <div className={`w-24 flex-shrink-0 px-4 py-2 flex flex-col justify-center ${today ? 'bg-indigo-50/30' : ''}`}>
@@ -1039,7 +1039,12 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
         </div>
         {/* Quick-add panel */}
         {quickAddOpen && !isReadOnly && (
-          <div className="border-t border-indigo-100 bg-indigo-50/20 px-4 py-3" onClick={e => e.stopPropagation()}>
+          <div className="border-t border-indigo-100 bg-indigo-50/20 px-4 py-3 relative" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setQuickAddOpen(false)}
+              className="absolute top-2.5 right-3 text-gray-300 hover:text-gray-600 text-xl leading-none cursor-pointer transition-colors"
+              title="Close"
+            >×</button>
             <QuickAdd
               dateStr={dateStr}
               onSave={ev => onSaveEvent?.(ev)}
@@ -1060,7 +1065,7 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
           ? 'border-indigo-100 bg-indigo-50/20 border-l-4 border-l-indigo-400'
           : 'border-gray-100 bg-white hover:bg-gray-50/40'
       }`}
-      onClick={() => { if (!isReadOnly && !quickAddOpen) setQuickAddOpen(true); }}
+      onClick={() => { if (!isReadOnly) setQuickAddOpen(v => !v); }}
     >
       <div className="flex">
         {/* Date */}
