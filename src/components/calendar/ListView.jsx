@@ -410,7 +410,7 @@ function QuickAdd({ dateStr, onSave, onCancel }) {
     if (!finalCity) return;
     const base = { type: 'location', city: finalCity, dateFrom: dateStr, dateTo };
     if (person === 'zach'    || person === 'both') onSave({ ...base, person: 'zach',    hasKids });
-    if (person === 'arianne' || person === 'both') onSave({ ...base, person: 'arianne', hasKids: false });
+    if (person === 'arianne' || person === 'both') onSave({ ...base, person: 'arianne', hasKids });
     onCancel();
   }
 
@@ -486,16 +486,14 @@ function QuickAdd({ dateStr, onSave, onCancel }) {
       </div>
 
       {/* Kids */}
-      {(person === 'zach' || person === 'both') && (
-        <button
-          onClick={() => setHasKids(v => !v)}
-          className={`self-start flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
-            hasKids
-              ? 'bg-amber-50 border-amber-200 text-amber-700'
-              : 'bg-white border-gray-200 text-gray-400 hover:border-amber-200 hover:text-amber-500'
-          }`}
-        >👧 Kids</button>
-      )}
+      <button
+        onClick={() => setHasKids(v => !v)}
+        className={`self-start flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+          hasKids
+            ? 'bg-amber-50 border-amber-200 text-amber-700'
+            : 'bg-white border-gray-200 text-gray-400 hover:border-amber-200 hover:text-amber-500'
+        }`}
+      >👧 Kids</button>
 
       {/* Actions */}
       <div className="flex items-center gap-2">
