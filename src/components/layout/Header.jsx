@@ -12,7 +12,7 @@ export function Header({
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-100">
+      <header className="sticky top-0 z-40 bg-white border-b border-gray-100" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="max-w-5xl mx-auto px-5 py-3.5 flex items-center justify-between gap-4">
           {/* Left: title + status */}
           <div className="flex items-center gap-3">

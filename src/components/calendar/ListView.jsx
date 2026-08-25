@@ -394,7 +394,7 @@ function InlineTravelAdd({ dateStr, onSave, onCancel }) {
 
 // ── Quick-add popover (person + location + date range + kids) ─────────────────
 
-function QuickAdd({ dateStr, onSave, onCancel }) {
+function QuickAdd({ dateStr, events, onSave, onDelete, onCancel }) {
   const [person,     setPerson]     = useState('both');
   const [cityId,     setCityId]     = useState('');
   const [customCity, setCustomCity] = useState('');
@@ -406,8 +406,15 @@ function QuickAdd({ dateStr, onSave, onCancel }) {
       ? customCity.trim()
       : LOCATIONS.find(l => l.id === cityId)?.label ?? '';
 
+  // Existing location events covering this date (for display + delete)
+  const zachLocEvents    = (events ?? []).filter(e => e.type === 'location' && e.person === 'zach'    && coversDate(e, dateStr));
+  const arianneLocEvents = (events ?? []).filter(e => e.type === 'location' && e.person === 'arianne' && coversDate(e, dateStr));
+
   function handleSave() {
     if (!finalCity) return;
+    // Auto-delete existing location events for affected persons
+    if (person === 'zach' || person === 'both') zachLocEvents.forEach(ev => ev.id && onDelete?.(ev.id));
+    if (person === 'arianne' || person === 'both') arianneLocEvents.forEach(ev => ev.id && onDelete?.(ev.id));
     const base = { type: 'location', city: finalCity, dateFrom: dateStr, dateTo };
     if (person === 'zach'    || person === 'both') onSave({ ...base, person: 'zach',    hasKids });
     if (person === 'arianne' || person === 'both') onSave({ ...base, person: 'arianne', hasKids });
@@ -435,6 +442,39 @@ function QuickAdd({ dateStr, onSave, onCancel }) {
           ))}
         </div>
       </div>
+
+      {/* Current locations (deletable) */}
+      {(zachLocEvents.length > 0 || arianneLocEvents.length > 0) && (
+        <div>
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Current</span>
+          <div className="flex flex-col gap-1 mt-1.5">
+            {zachLocEvents.map(ev => (
+              <div key={ev.id} className="flex items-center justify-between bg-cyan-50 border border-cyan-100 rounded-lg px-2.5 py-1.5">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0" />
+                  <span className="text-xs font-semibold text-cyan-800 truncate">Zach · {ev.city}</span>
+                  {ev.dateFrom !== ev.dateTo && (
+                    <span className="text-[10px] text-cyan-500 flex-shrink-0">{ev.dateFrom} – {ev.dateTo}</span>
+                  )}
+                </div>
+                <button onClick={() => { onDelete?.(ev.id); }} className="ml-2 text-red-400 hover:text-red-600 text-base leading-none cursor-pointer transition-colors flex-shrink-0">×</button>
+              </div>
+            ))}
+            {arianneLocEvents.map(ev => (
+              <div key={ev.id} className="flex items-center justify-between bg-purple-50 border border-purple-100 rounded-lg px-2.5 py-1.5">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400 flex-shrink-0" />
+                  <span className="text-xs font-semibold text-purple-800 truncate">Arianne · {ev.city}</span>
+                  {ev.dateFrom !== ev.dateTo && (
+                    <span className="text-[10px] text-purple-500 flex-shrink-0">{ev.dateFrom} – {ev.dateTo}</span>
+                  )}
+                </div>
+                <button onClick={() => { onDelete?.(ev.id); }} className="ml-2 text-red-400 hover:text-red-600 text-base leading-none cursor-pointer transition-colors flex-shrink-0">×</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Where */}
       <div>
@@ -1045,7 +1085,9 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
             >×</button>
             <QuickAdd
               dateStr={dateStr}
+              events={events}
               onSave={ev => onSaveEvent?.(ev)}
+              onDelete={onDeleteEvent}
               onCancel={() => setQuickAddOpen(false)}
             />
           </div>
@@ -1276,7 +1318,7 @@ function MonthHeader({ dateStr }) {
 
 function ColumnHeader({ isReadOnly }) {
   return (
-    <div className="flex border-b border-gray-200 bg-white sticky top-[53px] z-20 shadow-sm">
+    <div className="flex border-b border-gray-200 bg-white sticky z-20 shadow-sm" style={{ top: 'calc(53px + env(safe-area-inset-top))' }}>
       <div className="w-24 flex-shrink-0 px-4 py-2.5" />
       <div className="flex-1 px-3 py-2.5 border-l border-cyan-100/70">
         <span className="text-sm font-bold text-cyan-600">Zach</span>
