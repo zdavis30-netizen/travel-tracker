@@ -552,7 +552,8 @@ function QuickAdd({ dateStr, events, onSave, onDelete, onCancel }) {
 
 // ── Location label (in person column) ─────────────────────────────────────────
 
-function LocationLabel({ event, person, dateStr, onToggleKids, onDragStart }) {
+function LocationLabel({ event, person, dateStr, onToggleKids, onDragStart, onDelete }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const locMeta  = getLocationMeta(event.city);
   const dotColor = locMeta ? locMeta.color : (person === 'zach' ? '#22d3ee' : '#c084fc');
   const isLastDay = event.dateTo === dateStr; // show drag handle on last day of event
@@ -565,7 +566,25 @@ function LocationLabel({ event, person, dateStr, onToggleKids, onDragStart }) {
             className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-0.5"
             style={{ backgroundColor: dotColor }}
           />
-          <span className="text-sm font-semibold text-gray-800 leading-tight">{event.city}</span>
+          {confirmDelete ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-gray-500 leading-tight">{event.city}</span>
+              <button
+                onClick={e => { e.stopPropagation(); onDelete?.(event.id); }}
+                className="text-[10px] font-semibold text-white bg-red-500 hover:bg-red-600 px-1.5 py-0.5 rounded cursor-pointer transition-colors"
+              >Remove</button>
+              <button
+                onClick={e => { e.stopPropagation(); setConfirmDelete(false); }}
+                className="text-[10px] text-gray-400 hover:text-gray-600 cursor-pointer transition-colors"
+              >Cancel</button>
+            </div>
+          ) : (
+            <button
+              onClick={e => { e.stopPropagation(); if (onDelete) setConfirmDelete(true); }}
+              className="text-sm font-semibold text-gray-800 leading-tight text-left cursor-pointer hover:text-red-500 transition-colors"
+              title="Tap to delete"
+            >{event.city}</button>
+          )}
         </div>
         {event.hasKids ? (
           onToggleKids ? (
@@ -715,7 +734,7 @@ function TravelDetails({ events, dateStr }) {
 
 // ── Person column ──────────────────────────────────────────────────────────────
 
-function PersonEvents({ events, person, dateStr, onToggleKids, onDragStart }) {
+function PersonEvents({ events, person, dateStr, onToggleKids, onDragStart, onDelete }) {
   const locationEvents = events.filter(e => e.type === 'location');
   if (locationEvents.length === 0) return null;
   return (
@@ -728,6 +747,7 @@ function PersonEvents({ events, person, dateStr, onToggleKids, onDragStart }) {
           dateStr={dateStr}
           onToggleKids={onToggleKids}
           onDragStart={onDragStart}
+          onDelete={onDelete}
         />
       ))}
     </div>
@@ -1145,6 +1165,7 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
             dateStr={dateStr}
             onToggleKids={isReadOnly ? undefined : handleToggleKids}
             onDragStart={isReadOnly ? undefined : handleDragStart}
+            onDelete={isReadOnly ? undefined : onDeleteEvent}
           />
         </div>
 
@@ -1159,6 +1180,7 @@ function DayRow({ dateStr, events, onDayClick, onAddEntry, onSaveEvent, onEditEv
             dateStr={dateStr}
             onToggleKids={isReadOnly ? undefined : handleToggleKids}
             onDragStart={isReadOnly ? undefined : handleDragStart}
+            onDelete={isReadOnly ? undefined : onDeleteEvent}
           />
         </div>
 
