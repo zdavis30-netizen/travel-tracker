@@ -37,9 +37,9 @@ export function useEvents() {
   const addEvent = useCallback((event) => {
     const newEvent = { ...event, id: event.id || crypto.randomUUID(), createdAt: event.createdAt || Date.now() };
     if (isFirebaseConfigured) {
+      // Firebase SDK applies the write to its local cache immediately and fires onValue —
+      // no manual optimistic update needed (adding one causes a visible duplicate).
       push(ref(db, 'events'), newEvent);
-      // Optimistically update local state immediately — don't wait for onValue round-trip
-      setEvents(prev => [...prev, newEvent]);
     } else {
       setEvents(prev => [...prev, newEvent]);
     }
@@ -51,8 +51,7 @@ export function useEvents() {
       setEvents(prev => {
         const event = prev.find(e => e.id === id);
         if (event?.fbId) update(ref(db, `events/${event.fbId}`), patch);
-        // Optimistically update local state immediately — don't wait for onValue round-trip
-        return prev.map(e => (e.id === id ? { ...e, ...patch } : e));
+        return prev; // onValue will reflect the change
       });
     } else {
       setEvents(prev => prev.map(e => (e.id === id ? { ...e, ...patch } : e)));
@@ -64,8 +63,7 @@ export function useEvents() {
       setEvents(prev => {
         const event = prev.find(e => e.id === id);
         if (event?.fbId) remove(ref(db, `events/${event.fbId}`));
-        // Optimistically remove from local state immediately
-        return prev.filter(e => e.id !== id);
+        return prev; // onValue will reflect the removal
       });
     } else {
       setEvents(prev => prev.filter(e => e.id !== id));
