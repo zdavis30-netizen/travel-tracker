@@ -25,12 +25,22 @@ export default async function handler(req, res) {
 
     const json = await response.json();
 
-    // AeroDataBox returns an array of flights
+    // AeroDataBox returns an array of flights (same number, different routes/codeshares)
     if (!Array.isArray(json) || json.length === 0) {
       return res.status(200).json({ success: false, reason: 'not_found' });
     }
 
-    const f = json[0];
+    // Prefer flights touching our home airports first.
+    // Covers Denver, Chicago (O'Hare + Midway), Milwaukee, New York (JFK/LGA/EWR).
+    const HOME_AIRPORTS = new Set(['DEN', 'ORD', 'MDW', 'MKE', 'JFK', 'LGA', 'EWR']);
+
+    function score(flight) {
+      const dep = flight.departure?.airport?.iata || '';
+      const arr = flight.arrival?.airport?.iata   || '';
+      return (HOME_AIRPORTS.has(dep) ? 2 : 0) + (HOME_AIRPORTS.has(arr) ? 1 : 0);
+    }
+
+    const f = json.slice().sort((a, b) => score(b) - score(a))[0];
 
     // AeroDataBox local time format: "2024-03-16 07:30-06:00"
     // Extract just the HH:MM part and convert to 12-hour format
