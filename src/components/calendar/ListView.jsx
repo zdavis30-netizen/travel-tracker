@@ -568,22 +568,27 @@ function LocationLabel({ event, person, dateStr, onToggleKids, onDragStart, onDe
           />
           {confirmDelete ? (
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-gray-500 leading-tight">{event.city}</span>
+              <span className="text-xs text-gray-500 leading-tight truncate">{event.city}</span>
               <button
                 onClick={e => { e.stopPropagation(); onDelete?.(event.id); }}
-                className="text-[10px] font-semibold text-white bg-red-500 hover:bg-red-600 px-1.5 py-0.5 rounded cursor-pointer transition-colors"
-              >Remove</button>
+                className="text-[10px] font-semibold text-white bg-red-500 hover:bg-red-600 px-1.5 py-0.5 rounded cursor-pointer transition-colors flex-shrink-0"
+              >Delete</button>
               <button
                 onClick={e => { e.stopPropagation(); setConfirmDelete(false); }}
-                className="text-[10px] text-gray-400 hover:text-gray-600 cursor-pointer transition-colors"
+                className="text-[10px] text-gray-400 hover:text-gray-600 cursor-pointer transition-colors flex-shrink-0"
               >Cancel</button>
             </div>
           ) : (
-            <button
-              onClick={e => { e.stopPropagation(); if (onDelete) setConfirmDelete(true); }}
-              className="text-sm font-semibold text-gray-800 leading-tight text-left cursor-pointer hover:text-red-500 transition-colors"
-              title="Tap to delete"
-            >{event.city}</button>
+            <div className="flex items-center gap-1">
+              <span className="text-sm font-semibold text-gray-800 leading-tight">{event.city}</span>
+              {onDelete && (
+                <button
+                  onClick={e => { e.stopPropagation(); setConfirmDelete(true); }}
+                  className="text-gray-300 hover:text-red-500 text-base leading-none cursor-pointer transition-colors flex-shrink-0 ml-0.5"
+                  title="Delete location"
+                >×</button>
+              )}
+            </div>
           )}
         </div>
         {event.hasKids ? (

@@ -63,7 +63,7 @@ export function useEvents() {
       setEvents(prev => {
         const event = prev.find(e => e.id === id);
         if (event?.fbId) remove(ref(db, `events/${event.fbId}`));
-        return prev; // onValue will reflect the removal
+        return prev.filter(e => e.id !== id);
       });
     } else {
       setEvents(prev => prev.filter(e => e.id !== id));
