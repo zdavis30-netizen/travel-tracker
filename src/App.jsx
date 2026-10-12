@@ -5,6 +5,8 @@ import { EventModal } from './components/forms/EventModal';
 import { ImportModal } from './components/forms/ImportModal';
 import { BookingsPanel } from './components/layout/BookingsPanel';
 import { useEvents } from './hooks/useEvents';
+import { useAuth } from './hooks/useAuth';
+import { LoginScreen } from './components/auth/LoginScreen';
 
 const isReadOnly = new URLSearchParams(window.location.search).get('mode') === 'view';
 
@@ -67,6 +69,7 @@ function PullToRefresh() {
 }
 
 function App() {
+  const { user, signIn, logOut, error: authError, pending: authPending } = useAuth();
   const { events, addEvent, updateEvent, deleteEvent, isLive } = useEvents();
   const [modalOpen, setModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -118,6 +121,18 @@ function App() {
     deduped.forEach(e => addEvent(e));
   }
 
+  // Auth gate: view-only link is always accessible; edit mode requires login
+  if (!isReadOnly && user === undefined) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (!isReadOnly && !user) {
+    return <LoginScreen onSignIn={signIn} error={authError} pending={authPending} />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <PullToRefresh />
@@ -125,6 +140,7 @@ function App() {
         onAddEvent={isReadOnly ? undefined : handleAddEvent}
         onImport={isReadOnly ? undefined : () => setImportOpen(true)}
         onOpenBookings={() => setBookingsOpen(true)}
+        onSignOut={isReadOnly ? undefined : logOut}
         isLive={isLive}
         isReadOnly={isReadOnly}
       />
